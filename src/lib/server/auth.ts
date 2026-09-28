@@ -20,14 +20,15 @@ export async function requireOwner() {
     throw new AccessError(503, "Cloud setup is incomplete.");
   }
   const db = await createSupabaseServerClient();
-  const { data, error } = await db.auth.getUser();
-  if (error || !data.user) throw new AccessError(401, "Please sign in again.");
-  if (data.user.id !== config.owner || data.user.is_anonymous)
+  const { data, error } = await db.auth.getClaims();
+  if (error || !data?.claims)
+    throw new AccessError(401, "Please sign in again.");
+  if (data.claims.sub !== config.owner || data.claims.is_anonymous)
     throw new AccessError(403, "This account does not have access.");
   const allowed = await db.rpc("is_app_owner");
   if (allowed.error)
     throw new AccessError(503, "Database setup is incomplete or unavailable.");
   if (!allowed.data)
     throw new AccessError(403, "This account does not have access.");
-  return { db, owner: data.user.id };
+  return { db, owner: data.claims.sub };
 }

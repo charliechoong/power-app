@@ -27,7 +27,7 @@ export async function proxy(request: NextRequest) {
         },
       },
     });
-    await client.auth.getUser();
+    await client.auth.getClaims();
   } catch {
     /* Protected layouts and API handlers deny access independently. */
   }
@@ -39,6 +39,7 @@ export const config = {
     "/login",
     "/reflections/:path*",
     "/reading/:path*",
+    "/gratitude/:path*",
     "/settings/:path*",
   ],
 };

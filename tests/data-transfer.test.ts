@@ -39,6 +39,15 @@ const source: ImportData = {
       ],
     },
   ],
+  gratitudes: [
+    {
+      id: "gratitude-1",
+      title: "A memory",
+      content: "I remember **that day**.",
+      createdAt: date,
+      updatedAt: date,
+    },
+  ],
 };
 
 test("combined and overlapping backups preserve all data and deduplicate identical IDs", () => {
@@ -49,6 +58,7 @@ test("combined and overlapping backups preserve all data and deduplicate identic
     matchedEntries: 1,
     matchedBooks: 1,
     matchedNotes: 1,
+    matchedGratitudes: 1,
     differences: [],
   });
 });

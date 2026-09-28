@@ -4,5 +4,6 @@ backups
 commonplace-*.json
 reading-*.json
 reflections-*.json
+gratitude-*.json
 test-results
 playwright-report

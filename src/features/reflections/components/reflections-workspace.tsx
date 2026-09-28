@@ -104,7 +104,17 @@ export function ReflectionsWorkspace() {
     setError("");
     setStatus("");
     try {
-      await localRepository.save({ kind, content, attribution }, editing);
+      const entry = await localRepository.save(
+        { kind, content, attribution },
+        editing,
+      );
+      setEntries((previous) =>
+        [...previous.filter((item) => item.id !== entry.id), entry].sort(
+          (a, b) =>
+            Date.parse(b.createdAt) - Date.parse(a.createdAt) ||
+            a.id.localeCompare(b.id),
+        ),
+      );
       reset();
       setStatus(
         mode === "cloud"
@@ -113,7 +123,6 @@ export function ReflectionsWorkspace() {
             ? "Changes saved on this device."
             : "Saved on this device. A thought worth keeping.",
       );
-      await refresh();
       textarea.current?.focus();
     } catch {
       setError(
@@ -132,10 +141,10 @@ export function ReflectionsWorkspace() {
     setError("");
     try {
       await localRepository.remove(id);
+      setEntries((previous) => previous.filter((entry) => entry.id !== id));
       if (editing?.id === id) reset();
       setPendingDelete(undefined);
       setStatus("Entry deleted.");
-      await refresh();
     } catch {
       setError("Couldn’t delete this entry. Please try again.");
     } finally {

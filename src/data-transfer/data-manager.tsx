@@ -7,6 +7,7 @@ import {
   MAX_BACKUP_BYTES,
   REFLECTIONS_PREFIX,
   READING_PREFIX,
+  GRATITUDE_PREFIX,
   parseBackups,
   type Backup,
   type ImportCounts,
@@ -20,7 +21,9 @@ function localBackup(): Backup {
     const key = localStorage.key(i);
     if (
       key &&
-      (key.startsWith(REFLECTIONS_PREFIX) || key.startsWith(READING_PREFIX))
+      (key.startsWith(REFLECTIONS_PREFIX) ||
+        key.startsWith(READING_PREFIX) ||
+        key.startsWith(GRATITUDE_PREFIX))
     )
       records[key] = localStorage.getItem(key) ?? "";
   }
@@ -57,7 +60,7 @@ export function DataManager() {
       );
     setBackups(values);
     setSummary(
-      `${data.entries.length} reflections/quotes, ${data.books.length} books, ${data.books.reduce((n, b) => n + b.notes.length, 0)} notes.`,
+      `${data.entries.length} reflections/quotes, ${data.books.length} books, ${data.books.reduce((n, b) => n + b.notes.length, 0)} notes, ${data.gratitudes.length} gratitude entries.`,
     );
   }
   async function run(operation: () => Promise<void>) {
@@ -88,8 +91,8 @@ export function DataManager() {
       <section className="data-panel">
         <h2>Keep a backup</h2>
         <p>
-          Download reflections, books, progress, and book notes together. This
-          file contains private data.
+          Download reflections, books, progress, book notes, and gratitude
+          entries together. This file contains private data.
         </p>
         <button
           className="button primary"
@@ -250,7 +253,8 @@ export function DataManager() {
             <p>
               {verification.matchedEntries} reflections/quotes,{" "}
               {verification.matchedBooks} books, and {verification.matchedNotes}{" "}
-              notes match the backup.
+              notes, and {verification.matchedGratitudes} gratitude entries
+              match the backup.
             </p>
             {verification.differences.length ? (
               <>
@@ -291,11 +295,13 @@ function Counts({ counts }: { counts: ImportCounts }) {
     <>
       <p>
         Add: {counts.entriesAdded} reflections/quotes, {counts.booksAdded}{" "}
-        books, {counts.notesAdded} notes.
+        books, {counts.notesAdded} notes, {counts.gratitudesAdded} gratitude
+        entries.
       </p>
       <p>
         Skip existing: {counts.entriesSkipped} reflections/quotes,{" "}
-        {counts.booksSkipped} books, {counts.notesSkipped} notes.
+        {counts.booksSkipped} books, {counts.notesSkipped} notes,{" "}
+        {counts.gratitudesSkipped} gratitude entries.
       </p>
     </>
   );

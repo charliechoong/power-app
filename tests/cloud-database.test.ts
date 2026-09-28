@@ -37,6 +37,15 @@ const payload = {
       ],
     },
   ],
+  gratitudes: [
+    {
+      id: "g1",
+      title: "A kind friend",
+      content: "I was helped by **a friend**.",
+      createdAt: date,
+      updatedAt: date,
+    },
+  ],
 };
 
 test("cloud schema protects private data and imports atomically without overwriting", async () => {
@@ -60,6 +69,36 @@ test("cloud schema protects private data and imports atomically without overwrit
         ),
         "utf8",
       ),
+    );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202609270001_gratitude.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await db.query(
+      "insert into public.gratitude_entries(owner_id,id,content,created_at,updated_at) values ($1,'before-title','Saved before titles',$2,$2)",
+      [owner, date],
+    );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202609270002_gratitude_titles.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    assert.equal(
+      (
+        await db.query<{ title: string }>(
+          "select title from public.gratitude_entries where id='before-title'",
+        )
+      ).rows[0].title,
+      "",
     );
     await db.query("insert into app_private.owners values ($1)", [owner]);
     await db.exec("set role anon");
@@ -115,6 +154,8 @@ test("cloud schema protects private data and imports atomically without overwrit
       booksSkipped: 0,
       notesAdded: 1,
       notesSkipped: 0,
+      gratitudesAdded: 1,
+      gratitudesSkipped: 0,
     };
     assert.deepEqual(await runImport(payload, true), added);
     assert.equal(
@@ -122,6 +163,37 @@ test("cloud schema protects private data and imports atomically without overwrit
       0,
     );
     assert.deepEqual(await runImport(payload, false), added);
+    assert.equal(
+      (
+        await db.query<{ title: string }>(
+          "select title from public.gratitude_entries where id='g1'",
+        )
+      ).rows[0].title,
+      "A kind friend",
+    );
+    await runImport(
+      {
+        entries: [],
+        books: [],
+        gratitudes: [
+          {
+            id: "legacy",
+            content: "An older backup",
+            createdAt: date,
+            updatedAt: date,
+          },
+        ],
+      },
+      false,
+    );
+    assert.equal(
+      (
+        await db.query<{ title: string }>(
+          "select title from public.gratitude_entries where id='legacy'",
+        )
+      ).rows[0].title,
+      "",
+    );
     assert.deepEqual(await runImport(payload, false), {
       entriesAdded: 0,
       entriesSkipped: 1,
@@ -129,6 +201,8 @@ test("cloud schema protects private data and imports atomically without overwrit
       booksSkipped: 1,
       notesAdded: 0,
       notesSkipped: 1,
+      gratitudesAdded: 0,
+      gratitudesSkipped: 1,
     });
     assert.equal(
       (
@@ -166,7 +240,12 @@ test("cloud schema protects private data and imports atomically without overwrit
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       stranger,
     ]);
-    for (const table of ["reflections", "reading_books", "reading_notes"]) {
+    for (const table of [
+      "reflections",
+      "reading_books",
+      "reading_notes",
+      "gratitude_entries",
+    ]) {
       assert.equal(
         (await db.query(`select * from public.${table}`)).rows.length,
         0,

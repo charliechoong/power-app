@@ -1,10 +1,19 @@
 import { parseEntry, type Entry } from "@/features/reflections/model";
 import { parseBook, type Book } from "@/features/reading/model";
+import {
+  parseGratitude,
+  type GratitudeEntry,
+} from "@/features/gratitude/model";
 
 export const REFLECTIONS_PREFIX = "personal-hub:reflections:v1:";
 export const READING_PREFIX = "personal-hub:reading:v1:";
+export const GRATITUDE_PREFIX = "personal-hub:gratitude:v1:";
 export const MAX_BACKUP_BYTES = 3_000_000;
-export type ImportData = { entries: Entry[]; books: Book[] };
+export type ImportData = {
+  entries: Entry[];
+  books: Book[];
+  gratitudes: GratitudeEntry[];
+};
 export type ImportCounts = {
   entriesAdded: number;
   entriesSkipped: number;
@@ -12,6 +21,8 @@ export type ImportCounts = {
   booksSkipped: number;
   notesAdded: number;
   notesSkipped: number;
+  gratitudesAdded: number;
+  gratitudesSkipped: number;
 };
 export type Backup = {
   version: 1;
@@ -49,6 +60,15 @@ function normalizedBook(value: unknown) {
       .sort((a, b) => a.id.localeCompare(b.id)),
   };
 }
+function normalizedGratitude(value: unknown) {
+  const entry = parseGratitude(value);
+  idCheck(entry.id);
+  return {
+    ...entry,
+    createdAt: new Date(entry.createdAt).toISOString(),
+    updatedAt: new Date(entry.updatedAt).toISOString(),
+  };
+}
 
 // Cross-domain import is application composition; neither domain imports the other.
 export function parseBackups(backups: unknown): ImportData {
@@ -56,6 +76,7 @@ export function parseBackups(backups: unknown): ImportData {
     throw new Error("Choose one to ten backup files.");
   const entries = new Map<string, Entry>();
   const books = new Map<string, Book>();
+  const gratitudes = new Map<string, GratitudeEntry>();
   let count = 0;
   for (const input of backups) {
     if (!input || typeof input !== "object")
@@ -100,13 +121,27 @@ export function parseBackups(backups: unknown): ImportData {
             "Conflicting versions of the same book. Select only the backup you want to import.",
           );
         books.set(book.id, book);
+      } else if (key.startsWith(GRATITUDE_PREFIX)) {
+        const entry = normalizedGratitude(value);
+        if (key !== GRATITUDE_PREFIX + entry.id)
+          throw new Error("Gratitude ID does not match its storage key.");
+        const old = gratitudes.get(entry.id);
+        if (old && JSON.stringify(old) !== JSON.stringify(entry))
+          throw new Error(
+            "Conflicting versions of the same gratitude entry. Select only the backup you want to import.",
+          );
+        gratitudes.set(entry.id, entry);
       } else
         throw new Error(
           "This file includes unrecognized records. Nothing has been imported.",
         );
     }
   }
-  return { entries: [...entries.values()], books: [...books.values()] };
+  return {
+    entries: [...entries.values()],
+    books: [...books.values()],
+    gratitudes: [...gratitudes.values()],
+  };
 }
 
 export function makeBackup(data: ImportData): Backup {
@@ -122,6 +157,10 @@ export function makeBackup(data: ImportData): Backup {
         READING_PREFIX + book.id,
         JSON.stringify(book),
       ]),
+      ...data.gratitudes.map((entry) => [
+        GRATITUDE_PREFIX + entry.id,
+        JSON.stringify(entry),
+      ]),
     ]),
   };
 }
@@ -133,10 +172,14 @@ export function verifyImport(expected: ImportData, actual: ImportData) {
   const books = new Map(
     actual.books.map((book) => [book.id, normalizedBook(book)]),
   );
+  const gratitudes = new Map(
+    actual.gratitudes.map((entry) => [entry.id, normalizedGratitude(entry)]),
+  );
   const differences: { module: string; id: string }[] = [];
   let matchedEntries = 0;
   let matchedBooks = 0;
   let matchedNotes = 0;
+  let matchedGratitudes = 0;
   for (const entry of expected.entries) {
     if (
       JSON.stringify(normalizedEntry(entry)) ===
@@ -154,5 +197,19 @@ export function verifyImport(expected: ImportData, actual: ImportData) {
       matchedNotes += book.notes.length;
     } else differences.push({ module: "Reading", id: book.id });
   }
-  return { matchedEntries, matchedBooks, matchedNotes, differences };
+  for (const entry of expected.gratitudes) {
+    if (
+      JSON.stringify(normalizedGratitude(entry)) ===
+      JSON.stringify(gratitudes.get(entry.id))
+    )
+      matchedGratitudes++;
+    else differences.push({ module: "Gratitude", id: entry.id });
+  }
+  return {
+    matchedEntries,
+    matchedBooks,
+    matchedNotes,
+    matchedGratitudes,
+    differences,
+  };
 }

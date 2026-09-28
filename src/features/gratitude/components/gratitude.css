@@ -1,0 +1,319 @@
+.gratitude-page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 51px 48px 65px;
+}
+.gratitude-page .page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 30px;
+}
+.gratitude-page .page-heading .eyebrow {
+  margin: 0 0 12px;
+}
+.gratitude-page h1 {
+  margin: 0;
+  font:
+    400 47px/1.12 Georgia,
+    serif;
+  letter-spacing: -1.8px;
+}
+.gratitude-page h1 span {
+  color: #8b9f78;
+}
+.gratitude-page .page-description {
+  color: #81877e;
+  margin: 14px 0 0;
+  font-size: 13px;
+}
+.gratitude-composer {
+  background: #fff;
+  border: 1px solid #dce2d5;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px #273b3304;
+  scroll-margin-top: 20px;
+  overflow: hidden;
+}
+.gratitude-composer-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 25px 26px 12px;
+}
+.gratitude-composer-head .eyebrow {
+  margin: 0 0 9px;
+}
+.gratitude-composer-head h2 {
+  margin: 0;
+  font:
+    400 22px Georgia,
+    serif;
+}
+.gratitude-composer-head > span {
+  color: #9ca493;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.gratitude-title-label {
+  display: block;
+  margin: 8px 26px 7px;
+  color: #5c6a57;
+  font-size: 11px;
+}
+.gratitude-title-label span {
+  color: #8b9384;
+}
+.gratitude-title-input {
+  display: block;
+  width: calc(100% - 52px);
+  margin: 0 26px 9px;
+  padding: 11px 12px;
+  border: 1px solid #e1e5dc;
+  border-radius: 5px;
+  background: #fbfcf9;
+  color: #354435;
+  font-size: 13px;
+}
+.gratitude-title-input::placeholder {
+  color: #a0a697;
+}
+.gratitude-composer textarea {
+  display: block;
+  width: calc(100% - 52px);
+  margin: 0 26px;
+  padding: 14px 0;
+  resize: vertical;
+  min-height: 142px;
+  border: 0;
+  background: transparent;
+  color: #354435;
+  font:
+    18px/1.65 Georgia,
+    serif;
+}
+.gratitude-composer textarea::placeholder {
+  color: #a0a697;
+}
+.gratitude-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 13px;
+  margin: 0 26px 19px;
+  color: #8b9587;
+  font-size: 11px;
+}
+.gratitude-bold {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  color: #455e45;
+  background: #eef2e9;
+  border: 1px solid #d8e2d1;
+  border-radius: 5px;
+}
+.gratitude-bold strong {
+  font-family: Georgia, serif;
+  font-size: 16px;
+}
+.gratitude-preview {
+  margin: 0 26px 20px;
+  padding: 16px 18px;
+  background: #f7f9f3;
+  border: 1px solid #e5ebdf;
+  border-radius: 6px;
+}
+.gratitude-preview > span {
+  color: #819078;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.gratitude-preview h3 {
+  margin: 9px 0 0;
+  color: #354435;
+  font:
+    400 20px/1.3 Georgia,
+    serif;
+}
+.gratitude-preview p {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    16px/1.7 Georgia,
+    serif;
+}
+.gratitude-composer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  padding: 16px 26px;
+  border-top: 1px solid #edf0e8;
+}
+.gratitude-status {
+  min-height: 36px;
+  margin: 8px 0;
+  color: #537449;
+  font-size: 11px;
+}
+.gratitude-collection {
+  margin-top: 14px;
+}
+.gratitude-collection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.gratitude-collection h2 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font:
+    400 24px Georgia,
+    serif;
+}
+.gratitude-collection h2 span {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #edf0e7;
+  color: #869178;
+  font:
+    10px Arial,
+    sans-serif;
+}
+.gratitude-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #8b9584;
+}
+.gratitude-search input {
+  width: 165px;
+  border: 0;
+  border-bottom: 1px solid #dce2d4;
+  padding: 9px 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 11px;
+}
+.gratitude-list {
+  display: grid;
+  gap: 14px;
+}
+.gratitude-card {
+  padding: 23px 26px 17px;
+  border: 1px solid #e0e5da;
+  border-radius: 9px;
+  background: #fff;
+}
+.gratitude-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #899381;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.gratitude-card-title {
+  margin: 17px 0 0;
+  color: #354435;
+  font:
+    400 23px/1.3 Georgia,
+    serif;
+  overflow-wrap: anywhere;
+}
+.gratitude-card-title + p {
+  margin-top: 9px;
+}
+.gratitude-card > p {
+  margin: 18px 0 20px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    18px/1.75 Georgia,
+    serif;
+  color: #354435;
+}
+.gratitude-card strong,
+.gratitude-preview strong {
+  font-weight: 700;
+}
+.gratitude-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-top: 1px solid #eef0ea;
+  padding-top: 10px;
+  color: #8b9584;
+  font-size: 11px;
+}
+.gratitude-danger {
+  color: #a54d3d;
+}
+.gratitude-empty {
+  padding: 45px 25px;
+  text-align: center;
+  color: #849372;
+  background: #f6f8f1;
+  border: 1px dashed #dce2d4;
+  border-radius: 9px;
+}
+.gratitude-empty h3 {
+  margin: 13px 0 5px;
+  color: #3f5541;
+  font:
+    400 22px Georgia,
+    serif;
+}
+.gratitude-empty p,
+.gratitude-no-results {
+  color: #879083;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .gratitude-page {
+    padding: 31px 20px 70px;
+  }
+  .gratitude-page .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .gratitude-page h1 {
+    font-size: 40px;
+  }
+  .gratitude-composer-head {
+    padding: 22px 19px 12px;
+  }
+  .gratitude-title-label {
+    margin-left: 19px;
+    margin-right: 19px;
+  }
+  .gratitude-title-input {
+    width: calc(100% - 38px);
+    margin-left: 19px;
+    margin-right: 19px;
+  }
+  .gratitude-composer textarea {
+    width: calc(100% - 38px);
+    margin: 0 19px;
+  }
+  .gratitude-toolbar,
+  .gratitude-preview {
+    margin-left: 19px;
+    margin-right: 19px;
+  }
+  .gratitude-composer-foot {
+    padding: 14px 19px;
+  }
+  .gratitude-card {
+    padding: 20px;
+  }
+}

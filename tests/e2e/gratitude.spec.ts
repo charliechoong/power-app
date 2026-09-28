@@ -1,0 +1,71 @@
+import { test, expect } from "@playwright/test";
+
+test("capture, bold, edit, back up, and delete an experience", async ({
+  page,
+}) => {
+  await page.goto("/gratitude");
+  await expect(page.getByRole("heading", { name: "Gratitude." })).toBeVisible();
+  const field = page.getByLabel("Your grateful experience");
+  await page.getByLabel("Title (optional)").fill("A kind friend");
+  await field.fill("I remember my friend helping me move.");
+  await field.evaluate((element: HTMLTextAreaElement) => {
+    element.focus();
+    element.setSelectionRange(11, 20);
+  });
+  await page.getByRole("button", { name: "Bold selected text" }).click();
+  await expect(field).toHaveValue("I remember **my friend** helping me move.");
+  await expect(page.locator(".gratitude-preview strong")).toHaveText(
+    "my friend",
+  );
+  await page.getByRole("button", { name: "Save experience" }).click();
+  await expect(page.locator(".gratitude-card-title")).toHaveText(
+    "A kind friend",
+  );
+  await expect(page.locator(".gratitude-card strong")).toHaveText("my friend");
+  await page.reload();
+  await expect(page.locator(".gratitude-card")).toHaveCount(1);
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByLabel("Title (optional)")).toHaveValue(
+    "A kind friend",
+  );
+  await page.getByLabel("Title (optional)").fill("A lasting friendship");
+  await field.fill("I am grateful for **our friendship**.");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".gratitude-card strong")).toHaveText(
+    "our friendship",
+  );
+  await expect(page.locator(".gratitude-card-title")).toHaveText(
+    "A lasting friendship",
+  );
+  await page.getByPlaceholder("Search memories").fill("lasting friendship");
+  await expect(page.locator(".gratitude-card")).toHaveCount(1);
+  await page.getByPlaceholder("Search memories").fill("");
+  await page.goto("/settings/data");
+  await page
+    .getByRole("button", { name: "Use data saved in this browser" })
+    .click();
+  await expect(
+    page.getByText("1 gratitude entries.", { exact: false }),
+  ).toBeVisible();
+  await page.goto("/gratitude");
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.locator(".gratitude-card")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("title remains optional", async ({ page }) => {
+  await page.goto("/gratitude");
+  await page
+    .getByLabel("Your grateful experience")
+    .fill("A quiet morning outside.");
+  await page.getByRole("button", { name: "Save experience" }).click();
+  await expect(page.locator(".gratitude-card")).toContainText(
+    "A quiet morning outside.",
+  );
+  await expect(page.locator(".gratitude-card-title")).toHaveCount(0);
+});

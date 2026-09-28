@@ -10,7 +10,8 @@ type Name =
   | "edit"
   | "trash"
   | "check"
-  | "device";
+  | "device"
+  | "heart";
 const paths: Record<Name, React.ReactNode> = {
   spark: (
     <>
@@ -46,6 +47,9 @@ const paths: Record<Name, React.ReactNode> = {
       <rect x="3" y="4" width="18" height="13" rx="2" />
       <path d="M8 21h8m-4-4v4" />
     </>
+  ),
+  heart: (
+    <path d="M20.8 8.6c0 4.2-5.3 8.1-8.8 11-3.5-2.9-8.8-6.8-8.8-11a4.9 4.9 0 0 1 8.8-2.9 4.9 4.9 0 0 1 8.8 2.9Z" />
   ),
 };
 export function Icon({

@@ -4,7 +4,7 @@ The intended setup is Vercel Hobby plus Supabase Free in Singapore (`ap-southeas
 
 ## 1. Preserve the current data
 
-Open the **original browser profile and exact origin** currently used (`http://127.0.0.1:3101`). Go to **Data & backups → Download complete backup**. Store the JSON somewhere private. It includes reflections, quotes, books, progress, and all book notes. Keep the original local data as well.
+Open the **original browser profile and exact origin** currently used (`http://127.0.0.1:3101`). Go to **Data & backups → Download complete backup**. Store the JSON somewhere private. It includes reflections, quotes, books, progress, book notes, and gratitude entries. Keep the original local data as well.
 
 Opening `localhost`, a different port, or the hosted domain cannot read that origin's localStorage. Use the downloaded file on the hosted app. Do not copy the contents into source code, chat, or environment variables.
 
@@ -12,6 +12,8 @@ Opening `localhost`, a different port, or the hosted domain cannot read that ori
 
 1. Create a **Free** project in your chosen organization. Use Singapore unless another region is required. Do not enable paid branching, custom domains, or add-ons.
 2. Apply `supabase/migrations/202609260001_cloud_foundation.sql` once to the new project using Supabase migration tooling or its SQL editor. It creates domain tables, constraints, owner policies, and the transactional importer. Do not run it against an unrelated existing project.
+   Apply `supabase/migrations/202609270001_gratitude.sql` after the foundation migration to add Gratitude storage and extend the importer.
+   Apply `supabase/migrations/202609270002_gratitude_titles.sql` afterward to add optional titles while preserving existing Gratitude entries.
 3. In Authentication settings, disable new user signups and anonymous sign-ins. Keep email/password sign-in enabled.
 4. In Authentication → Users, manually create your own email/password user with email confirmed. Choose and store the password privately; it is not an application environment variable. There is no public registration or password-reset flow in this MVP. Account recovery is administered through Supabase; configure custom SMTP before relying on email recovery.
 5. Copy that auth user's UUID and allowlist it in SQL:

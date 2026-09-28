@@ -1,6 +1,6 @@
 # Commonplace — a personal hub
 
-A modular Next.js monolith with independent Reflections and Reading domains. Finance and other future modules are not implemented.
+A modular Next.js monolith with independent Reflections, Reading, and Gratitude domains. Finance and other future modules are not implemented.
 
 ## Run locally
 
@@ -12,7 +12,7 @@ npm run dev
 ```
 
 Open http://localhost:3000. The home route redirects to `/reflections`.
-Use the navigation to switch between Reflections and Reading (`/reading`).
+Use the navigation to switch between Reflections, Reading (`/reading`), and Gratitude (`/gratitude`).
 
 ```sh
 npm run lint
@@ -51,7 +51,13 @@ Webpack is explicitly selected for development and production builds because Tur
 - Existing books load with an empty notes list. Reading backups include all notes; deleting a book also deletes its notes. Unsaved notes remain drafts until saved and are lost when leaving the page.
 - Changing the current page reopens a finished book; choosing To read resets its page to zero. Page counts must be whole numbers and current page cannot exceed the total.
 
-There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads both domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Backups are plaintext private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
+### Gratitude
+
+- Capture experiences you feel grateful for, with an optional title; search, edit, or delete them.
+- Select words in the writing box and tap **Bold** (or use Command/Ctrl+B). Bold phrases show in the live preview and saved entries. Only bold markup is supported; text is rendered safely without HTML.
+- Entries are included in complete JSON backups and cloud import verification.
+
+There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all three domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Backups are plaintext private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
 
 ## Architecture
 

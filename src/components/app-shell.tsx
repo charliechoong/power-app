@@ -14,6 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sections = [
     { href: "/reflections", label: "Reflections", icon: "spark" as const },
     { href: "/reading", label: "Reading", icon: "book" as const },
+    { href: "/gratitude", label: "Gratitude", icon: "heart" as const },
     {
       href: "/settings/data",
       label: "Data & backups",
