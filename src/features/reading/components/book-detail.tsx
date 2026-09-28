@@ -7,6 +7,7 @@ import { progressPercent, STATUS_LABELS, type Book } from "../model";
 import { READING_STORAGE_PREFIX } from "../local-repository";
 import { useReadingRepository } from "../client-repository";
 import { useStorageMode } from "@/lib/storage-mode";
+import { useCanEdit } from "@/lib/edit-access";
 import { BookForm } from "./book-form";
 import { BookNotes } from "./book-notes";
 import "./reading.css";
@@ -15,6 +16,7 @@ import "./book-notes.css";
 export function BookDetail({ bookId }: { bookId: string }) {
   const readingRepository = useReadingRepository();
   const mode = useStorageMode();
+  const canEdit = useCanEdit();
   const [book, setBook] = useState<Book | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
@@ -62,7 +64,7 @@ export function BookDetail({ bookId }: { bookId: string }) {
   }, [bookId, retry, readingRepository, mode]);
 
   async function mutate(operation: () => Promise<Book>, success: string) {
-    if (busyRef.current || !book || error)
+    if (!canEdit || busyRef.current || !book || error)
       throw new Error("Book is unavailable.");
     busyRef.current = true;
     setBusy(true);
@@ -129,21 +131,23 @@ export function BookDetail({ bookId }: { bookId: string }) {
               </span>
               {percent !== null && <strong>{percent}%</strong>}
             </div>
-            <button
-              className="text-button"
-              disabled={busy || !!error}
-              onClick={() => setEditingBook((value) => !value)}
-            >
-              <Icon name="edit" size={14} />
-              {editingBook ? "Close book editor" : "Edit book & progress"}
-            </button>
+            {canEdit && (
+              <button
+                className="text-button"
+                disabled={busy || !!error}
+                onClick={() => setEditingBook((value) => !value)}
+              >
+                <Icon name="edit" size={14} />
+                {editingBook ? "Close book editor" : "Edit book & progress"}
+              </button>
+            )}
             {percent !== null && (
               <progress aria-label="Reading progress" value={percent} max={100}>
                 {percent}%
               </progress>
             )}
           </section>
-          {editingBook && (
+          {canEdit && editingBook && (
             <section
               className="reading-capture reading-detail-editor"
               aria-label="Edit book details"
@@ -172,6 +176,7 @@ export function BookDetail({ bookId }: { bookId: string }) {
           </div>
           <BookNotes
             notes={book.notes}
+            canEdit={canEdit}
             disabled={busy || !!error}
             onSave={(content, noteId) =>
               mutate(
@@ -191,9 +196,11 @@ export function BookDetail({ bookId }: { bookId: string }) {
           <footer className="reading-footer">
             <span>The pages end. The ideas stay with you.</span>
             <span>
-              {mode === "cloud"
-                ? "Saved to your private account. Reading backups include your notes."
-                : "Saved in this browser. Reading backups include your notes."}
+              {mode === "local"
+                ? "Saved in this browser. Reading backups include your notes."
+                : canEdit
+                  ? "Only you can update this book and its notes."
+                  : "Open to read. Only the owner can update this book."}
             </span>
           </footer>
         </>

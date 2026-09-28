@@ -5,6 +5,7 @@ import "./gratitude.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icon";
 import { useStorageMode } from "@/lib/storage-mode";
+import { useCanEdit } from "@/lib/edit-access";
 import { useGratitudeRepository } from "../client-repository";
 import { GRATITUDE_STORAGE_PREFIX } from "../local-repository";
 import {
@@ -31,6 +32,7 @@ function FormattedExperience({ content }: { content: string }) {
 export function GratitudeWorkspace() {
   const repository = useGratitudeRepository();
   const mode = useStorageMode();
+  const canEdit = useCanEdit();
   const [entries, setEntries] = useState<GratitudeEntry[]>([]);
   const [ready, setReady] = useState(false);
   const [content, setContent] = useState("");
@@ -104,7 +106,7 @@ export function GratitudeWorkspace() {
   }
 
   async function save() {
-    if (busyRef.current || !ready) return;
+    if (!canEdit || busyRef.current || !ready) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -137,7 +139,7 @@ export function GratitudeWorkspace() {
   }
 
   async function remove(id: string) {
-    if (busyRef.current) return;
+    if (!canEdit || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -191,112 +193,120 @@ export function GratitudeWorkspace() {
             Keep the experiences you are grateful for close.
           </p>
         </div>
-        <button className="button primary" onClick={focusComposer}>
-          <Icon name="plus" size={17} /> Add an experience
-        </button>
+        {canEdit && (
+          <button className="button primary" onClick={focusComposer}>
+            <Icon name="plus" size={17} /> Add an experience
+          </button>
+        )}
       </div>
 
-      <section
-        className="gratitude-composer"
-        ref={composer}
-        aria-label="Write a gratitude entry"
-      >
-        <div className="gratitude-composer-head">
-          <div>
-            <p className="eyebrow">YOUR EXPERIENCE</p>
-            <h2>
-              {editing ? "Edit this memory" : "What are you grateful for?"}
-            </h2>
-          </div>
-          <span>
-            {content.length}/{GRATITUDE_CONTENT_LIMIT}
-          </span>
-        </div>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
+      {canEdit && (
+        <section
+          className="gratitude-composer"
+          ref={composer}
+          aria-label="Write a gratitude entry"
         >
-          <label className="gratitude-title-label" htmlFor="gratitude-title">
-            Title <span>(optional)</span>
-          </label>
-          <input
-            id="gratitude-title"
-            className="gratitude-title-input"
-            value={title}
-            maxLength={GRATITUDE_TITLE_LIMIT}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Give this memory a name"
-          />
-          <label className="sr-only" htmlFor="gratitude-content">
-            Your grateful experience
-          </label>
-          <textarea
-            id="gratitude-content"
-            ref={textarea}
-            value={content}
-            maxLength={GRATITUDE_CONTENT_LIMIT}
-            onChange={(event) => setContent(event.target.value)}
-            onKeyDown={(event) => {
-              if (
-                (event.metaKey || event.ctrlKey) &&
-                event.key.toLowerCase() === "b"
-              ) {
-                event.preventDefault();
-                boldSelection();
-              }
-            }}
-            placeholder="I still remember when…"
-            rows={5}
-          />
-          <div className="gratitude-toolbar">
-            <button
-              type="button"
-              className="gratitude-bold"
-              onClick={boldSelection}
-              aria-label="Bold selected text"
-              title="Bold selected text (⌘/Ctrl+B)"
-            >
-              <strong>B</strong> <span>Bold</span>
-            </button>
+          <div className="gratitude-composer-head">
+            <div>
+              <p className="eyebrow">YOUR EXPERIENCE</p>
+              <h2>
+                {editing ? "Edit this memory" : "What are you grateful for?"}
+              </h2>
+            </div>
             <span>
-              Select words, then tap Bold. **bold** appears in the editor.
+              {content.length}/{GRATITUDE_CONTENT_LIMIT}
             </span>
           </div>
-          {content.trim() && (
-            <div className="gratitude-preview">
-              <span>PREVIEW</span>
-              {title.trim() && <h3>{title.trim()}</h3>}
-              <p>
-                <FormattedExperience content={content} />
-              </p>
-            </div>
-          )}
-          <div className="gratitude-composer-foot">
-            {editing && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save();
+            }}
+          >
+            <label className="gratitude-title-label" htmlFor="gratitude-title">
+              Title <span>(optional)</span>
+            </label>
+            <input
+              id="gratitude-title"
+              className="gratitude-title-input"
+              value={title}
+              maxLength={GRATITUDE_TITLE_LIMIT}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Give this memory a name"
+            />
+            <label className="sr-only" htmlFor="gratitude-content">
+              Your grateful experience
+            </label>
+            <textarea
+              id="gratitude-content"
+              ref={textarea}
+              value={content}
+              maxLength={GRATITUDE_CONTENT_LIMIT}
+              onChange={(event) => setContent(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  (event.metaKey || event.ctrlKey) &&
+                  event.key.toLowerCase() === "b"
+                ) {
+                  event.preventDefault();
+                  boldSelection();
+                }
+              }}
+              placeholder="I still remember when…"
+              rows={5}
+            />
+            <div className="gratitude-toolbar">
               <button
                 type="button"
-                className="text-button"
-                onClick={() => {
-                  setEditing(undefined);
-                  setContent("");
-                  setTitle("");
-                }}
+                className="gratitude-bold"
+                onClick={boldSelection}
+                aria-label="Bold selected text"
+                title="Bold selected text (⌘/Ctrl+B)"
               >
-                Cancel edit
+                <strong>B</strong> <span>Bold</span>
               </button>
+              <span>
+                Select words, then tap Bold. **bold** appears in the editor.
+              </span>
+            </div>
+            {content.trim() && (
+              <div className="gratitude-preview">
+                <span>PREVIEW</span>
+                {title.trim() && <h3>{title.trim()}</h3>}
+                <p>
+                  <FormattedExperience content={content} />
+                </p>
+              </div>
             )}
-            <button
-              className="button primary"
-              type="submit"
-              disabled={busy || !ready || !content.trim()}
-            >
-              {busy ? "Saving…" : editing ? "Save changes" : "Save experience"}
-            </button>
-          </div>
-        </form>
-      </section>
+            <div className="gratitude-composer-foot">
+              {editing && (
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => {
+                    setEditing(undefined);
+                    setContent("");
+                    setTitle("");
+                  }}
+                >
+                  Cancel edit
+                </button>
+              )}
+              <button
+                className="button primary"
+                type="submit"
+                disabled={busy || !ready || !content.trim()}
+              >
+                {busy
+                  ? "Saving…"
+                  : editing
+                    ? "Save changes"
+                    : "Save experience"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
 
       {error && (
         <p className="error-message" role="alert">
@@ -332,7 +342,9 @@ export function GratitudeWorkspace() {
             <Icon name="heart" size={29} />
             <h3>Your collection starts here.</h3>
             <p>
-              Write down a moment, big or small, that you are glad happened.
+              {canEdit
+                ? "Write down a moment, big or small, that you are glad happened."
+                : "No experiences have been shared yet."}
             </p>
           </div>
         ) : ready && visible.length === 0 ? (
@@ -357,45 +369,47 @@ export function GratitudeWorkspace() {
                 <p>
                   <FormattedExperience content={entry.content} />
                 </p>
-                <div className="gratitude-card-actions">
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => edit(entry)}
-                    disabled={busy}
-                  >
-                    <Icon name="edit" size={15} /> Edit
-                  </button>
-                  {pendingDelete === entry.id ? (
-                    <>
-                      <span>Delete this entry?</span>
-                      <button
-                        type="button"
-                        className="text-button gratitude-danger"
-                        onClick={() => void remove(entry.id)}
-                        disabled={busy}
-                      >
-                        Delete
-                      </button>
-                      <button
-                        type="button"
-                        className="text-button"
-                        onClick={() => setPendingDelete(undefined)}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
+                {canEdit && (
+                  <div className="gratitude-card-actions">
                     <button
                       type="button"
                       className="text-button"
-                      onClick={() => setPendingDelete(entry.id)}
+                      onClick={() => edit(entry)}
                       disabled={busy}
                     >
-                      <Icon name="trash" size={15} /> Delete
+                      <Icon name="edit" size={15} /> Edit
                     </button>
-                  )}
-                </div>
+                    {pendingDelete === entry.id ? (
+                      <>
+                        <span>Delete this entry?</span>
+                        <button
+                          type="button"
+                          className="text-button gratitude-danger"
+                          onClick={() => void remove(entry.id)}
+                          disabled={busy}
+                        >
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          className="text-button"
+                          onClick={() => setPendingDelete(undefined)}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-button"
+                        onClick={() => setPendingDelete(entry.id)}
+                        disabled={busy}
+                      >
+                        <Icon name="trash" size={15} /> Delete
+                      </button>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
           </div>

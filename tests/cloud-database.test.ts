@@ -48,7 +48,7 @@ const payload = {
   ],
 };
 
-test("cloud schema protects private data and imports atomically without overwriting", async () => {
+test("cloud schema preserves owner writes and opens content for public reading", async () => {
   const db = new PGlite();
   try {
     await db.exec(`
@@ -237,9 +237,26 @@ test("cloud schema protects private data and imports atomically without overwrit
       db.query("update public.reading_books set owner_id=$1", [stranger]),
       /row-level security/,
     );
+    await db.exec("reset role");
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20260928135825_public_read_owner_write.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await db.exec("set role authenticated");
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       stranger,
     ]);
+    const publicCounts: Record<string, number> = {
+      reflections: 1,
+      reading_books: 1,
+      reading_notes: 1,
+      gratitude_entries: 3,
+    };
     for (const table of [
       "reflections",
       "reading_books",
@@ -248,7 +265,7 @@ test("cloud schema protects private data and imports atomically without overwrit
     ]) {
       assert.equal(
         (await db.query(`select * from public.${table}`)).rows.length,
-        0,
+        publicCounts[table],
       );
       assert.equal(
         (await db.query(`delete from public.${table} returning id`)).rows
@@ -256,6 +273,31 @@ test("cloud schema protects private data and imports atomically without overwrit
         0,
       );
     }
+    await db.exec("reset role; set role anon");
+    for (const [table, count] of Object.entries(publicCounts)) {
+      assert.equal(
+        (await db.query(`select * from public.${table}`)).rows.length,
+        count,
+      );
+      await assert.rejects(
+        db.query(`delete from public.${table} where true`),
+        /permission denied/,
+      );
+    }
+    await assert.rejects(
+      db.query(
+        "insert into public.reflections(owner_id,id,kind,content) values ($1,'bad-anon','reflection','text')",
+        [owner],
+      ),
+      /permission denied/,
+    );
+    await assert.rejects(
+      db.query("select public.import_personal_data($1::jsonb, false)", [
+        JSON.stringify(payload),
+      ]),
+      /permission denied/,
+    );
+    await db.exec("reset role; set role authenticated");
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       owner,
     ]);

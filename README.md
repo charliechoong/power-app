@@ -64,8 +64,8 @@ There are no seeded entries. Unsaved drafts live in memory and are lost on a rel
 ```text
 src/
   app/                       Routing, metadata, layouts, composition
-    (private)/               Owner-protected routes (same public URLs)
-    api/                     Authenticated domain endpoints and data transfer
+    (private)/               Public reading routes; owner-only backup page
+    api/                     Public reads; owner-only writes and data transfer
     login/                   Owner sign-in
   lib/server/                Shared auth, Supabase connection, request validation
   data-transfer/             Application-level backup/import composition
@@ -103,7 +103,7 @@ Reading owns its own model and repository, with local records under `personal-hu
 
 **Local mode:** entries remain in localStorage on this browser and origin. Anyone with access to this browser profile can read them. Clearing site data or changing hostname, scheme, or port makes the collection unavailable. Keep a JSON backup before changing storage mode.
 
-**Cloud mode:** Supabase Auth verifies the owner on every API request, and PostgreSQL row-level security independently checks the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; private responses are not cached. There is no public signup. An empty owner allowlist denies all users.
+**Cloud mode:** Everyone can read published reflections and quotes, books and notes, and gratitude entries without signing in. This includes direct read access through the Supabase Data API; do not save anything you want to keep private. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL row-level security independently checks the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
 
 Vercel always forces cloud mode and fails closed if credentials are missing. Other hosts must explicitly set `APP_STORAGE_MODE=cloud`. Do not publish the local development server. Keep database administration and auth-user creation outside the public app. `noindex` is included, but it is not access control.
 
@@ -113,4 +113,4 @@ The server uses Supabase's HTTPS Data API, so there are no direct database conne
 
 Unit tests cover both domains: input validation, page bounds and completion rules, stable edit identity, search, independent client writes, deletion, corrupt records, storage failures, and isolation between Reading and Reflections. Playwright tests exercise capture, progress updates, completion with and without page totals, navigation, reload persistence, deletion, backup download, failure recovery, and cross-tab updates on desktop and mobile Chromium profiles.
 
-Additional tests execute the actual migration in PGlite PostgreSQL to check anonymous/outsider denial, owner isolation, import rollback, idempotence, and cascading note deletion. Transfer tests cover corrupt and conflicting backups, legacy books, and exact verification. Hosted sign-in, cookies, Data API configuration, and a real import must still be verified against the provisioned project before considering deployment complete.
+Additional tests execute the actual migrations in PGlite PostgreSQL to check public reads, anonymous/outsider write denial, owner isolation, import rollback, idempotence, and cascading note deletion. Transfer tests cover corrupt and conflicting backups, legacy books, and exact verification.

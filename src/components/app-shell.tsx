@@ -4,22 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useStorageMode } from "@/lib/storage-mode";
+import { useCanEdit } from "@/lib/edit-access";
 import { cloudRequest } from "@/lib/cloud-client";
 import { Icon } from "./icon";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const mode = useStorageMode();
+  const canEdit = useCanEdit();
   const [logoutError, setLogoutError] = useState("");
   const sections = [
     { href: "/reflections", label: "Reflections", icon: "spark" as const },
     { href: "/reading", label: "Reading", icon: "book" as const },
     { href: "/gratitude", label: "Gratitude", icon: "heart" as const },
-    {
-      href: "/settings/data",
-      label: "Data & backups",
-      icon: "download" as const,
-    },
+    ...(canEdit
+      ? [
+          {
+            href: "/settings/data",
+            label: "Data & backups",
+            icon: "download" as const,
+          },
+        ]
+      : []),
   ];
   const current = sections.find(
     (section) =>
@@ -62,12 +68,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Icon name="device" size={18} />
           <div>
             <strong>
-              {mode === "cloud" ? "Private cloud storage" : "On this device"}
+              {mode === "local"
+                ? "On this device"
+                : canEdit
+                  ? "Owner account"
+                  : "Public collection"}
             </strong>
             <p>
-              {mode === "cloud"
-                ? "Sign in from any device"
-                : "Local storage · no cloud sync"}
+              {mode === "local"
+                ? "Local storage · no cloud sync"
+                : canEdit
+                  ? "Only you can edit"
+                  : "Read reflections, books and gratitude"}
             </p>
           </div>
         </div>
@@ -81,17 +93,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="account-actions">
             <span className="local-badge">
               <span />
-              {mode === "cloud" ? "PRIVATE ACCOUNT" : "LOCAL EDITION"}
+              {mode === "local"
+                ? "LOCAL EDITION"
+                : canEdit
+                  ? "OWNER"
+                  : "PUBLIC VIEW"}
             </span>
-            {mode === "cloud" && (
+            {mode === "cloud" && !canEdit && (
+              <Link className="text-button" href="/login">
+                Owner sign in
+              </Link>
+            )}
+            {mode === "cloud" && canEdit && (
               <button
                 className="text-button"
                 onClick={async () => {
                   try {
                     await cloudRequest("/api/auth/logout", "POST");
-                    // Clear all in-memory private data after signing out.
+                    // Clear owner-only UI state after signing out.
                     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-                    window.location.assign("/login");
+                    window.location.assign("/reflections");
                   } catch {
                     setLogoutError("Could not sign out. Try again.");
                   }

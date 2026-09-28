@@ -7,11 +7,13 @@ import { NoteForm } from "./note-form";
 
 export function BookNotes({
   notes,
+  canEdit,
   disabled,
   onSave,
   onRemove,
 }: {
   notes: BookNote[];
+  canEdit: boolean;
   disabled: boolean;
   onSave: (content: string, noteId?: string) => Promise<void>;
   onRemove: (noteId: string) => Promise<void>;
@@ -23,16 +25,19 @@ export function BookNotes({
           Notes & learning points <span>{notes.length}</span>
         </h2>
       </div>
-      <div className="reading-capture">
-        <NoteForm disabled={disabled} onSave={(content) => onSave(content)} />
-      </div>
+      {canEdit && (
+        <div className="reading-capture">
+          <NoteForm disabled={disabled} onSave={(content) => onSave(content)} />
+        </div>
+      )}
       {notes.length === 0 ? (
         <div className="reading-notes-empty">
           <Icon name="book" size={25} />
           <h3>Keep more than the last page.</h3>
           <p>
-            Capture a useful idea, a question, or something you’d like to put
-            into practice.
+            {canEdit
+              ? "Capture a useful idea, a question, or something you’d like to put into practice."
+              : "No notes have been shared for this book yet."}
           </p>
         </div>
       ) : (
@@ -41,6 +46,7 @@ export function BookNotes({
             <NoteCard
               key={note.id}
               note={note}
+              canEdit={canEdit}
               disabled={disabled}
               onSave={(content) => onSave(content, note.id)}
               onRemove={() => onRemove(note.id)}
@@ -54,11 +60,13 @@ export function BookNotes({
 
 function NoteCard({
   note,
+  canEdit,
   disabled,
   onSave,
   onRemove,
 }: {
   note: BookNote;
+  canEdit: boolean;
   disabled: boolean;
   onSave: (content: string) => Promise<void>;
   onRemove: () => Promise<void>;
@@ -80,7 +88,7 @@ function NoteCard({
         </time>
         {note.updatedAt !== note.createdAt && <span>Edited</span>}
       </div>
-      {editing ? (
+      {canEdit && editing ? (
         <NoteForm
           note={note}
           disabled={disabled}
@@ -93,27 +101,29 @@ function NoteCard({
       ) : (
         <>
           <p className="reading-note-content">{note.content}</p>
-          <div className="reading-note-actions">
-            <button
-              className="text-button"
-              disabled={disabled}
-              onClick={() => setEditing(true)}
-            >
-              <Icon name="edit" size={14} />
-              Edit note
-            </button>
-            <button
-              className="text-button"
-              disabled={disabled}
-              onClick={() => setConfirmDelete(true)}
-            >
-              <Icon name="trash" size={14} />
-              Delete note
-            </button>
-          </div>
+          {canEdit && (
+            <div className="reading-note-actions">
+              <button
+                className="text-button"
+                disabled={disabled}
+                onClick={() => setEditing(true)}
+              >
+                <Icon name="edit" size={14} />
+                Edit note
+              </button>
+              <button
+                className="text-button"
+                disabled={disabled}
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Icon name="trash" size={14} />
+                Delete note
+              </button>
+            </div>
+          )}
         </>
       )}
-      {confirmDelete && (
+      {canEdit && confirmDelete && (
         <div
           className="reading-delete"
           role="group"

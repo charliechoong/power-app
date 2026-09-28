@@ -13,6 +13,7 @@ import {
 import { READING_STORAGE_PREFIX } from "../local-repository";
 import { useReadingRepository, exportReading } from "../client-repository";
 import { useStorageMode } from "@/lib/storage-mode";
+import { useCanEdit } from "@/lib/edit-access";
 import { BookForm } from "./book-form";
 import { BookCard } from "./book-card";
 import "./reading.css";
@@ -20,6 +21,7 @@ import "./reading.css";
 export function ReadingWorkspace() {
   const readingRepository = useReadingRepository();
   const mode = useStorageMode();
+  const canEdit = useCanEdit();
   const [books, setBooks] = useState<Book[]>([]);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState("");
@@ -71,7 +73,8 @@ export function ReadingWorkspace() {
   }, [retry, readingRepository, mode]);
 
   async function save(input: BookInput, existing?: Book) {
-    if (!ready || busyRef.current) throw new Error("Storage is not ready.");
+    if (!canEdit || !ready || busyRef.current)
+      throw new Error("Editing is unavailable.");
     busyRef.current = true;
     setBusy(true);
     setMessage("");
@@ -101,7 +104,8 @@ export function ReadingWorkspace() {
   }
 
   async function remove(id: string) {
-    if (!ready || busyRef.current) throw new Error("Storage is not ready.");
+    if (!canEdit || !ready || busyRef.current)
+      throw new Error("Editing is unavailable.");
     busyRef.current = true;
     setBusy(true);
     setMessage("");
@@ -125,16 +129,18 @@ export function ReadingWorkspace() {
         </h1>
         <p>Make room for your next read. Pick up where you left off.</p>
       </header>
-      <section
-        className="reading-capture"
-        aria-labelledby="reading-add-heading"
-      >
-        <div className="reading-capture-heading">
-          <Icon name="plus" size={18} />
-          <h2 id="reading-add-heading">A book to come back to</h2>
-        </div>
-        <BookForm disabled={!ready || busy} onSave={save} />
-      </section>
+      {canEdit && (
+        <section
+          className="reading-capture"
+          aria-labelledby="reading-add-heading"
+        >
+          <div className="reading-capture-heading">
+            <Icon name="plus" size={18} />
+            <h2 id="reading-add-heading">A book to come back to</h2>
+          </div>
+          <BookForm disabled={!ready || busy} onSave={save} />
+        </section>
+      )}
       <div className="reading-feedback" role="status" aria-live="polite">
         {message && (
           <>
@@ -159,25 +165,27 @@ export function ReadingWorkspace() {
           <h2 id="reading-shelf-heading">
             Your bookshelf <span>{books.length}</span>
           </h2>
-          <button
-            className="text-button"
-            onClick={async () => {
-              setExportError("");
-              try {
-                await exportReading(mode);
-                setMessage(
-                  "Reading backup downloaded. Keep it somewhere safe.",
-                );
-              } catch {
-                setExportError(
-                  "Couldn’t export your books. Browser storage may be unavailable.",
-                );
-              }
-            }}
-          >
-            <Icon name="download" size={15} />
-            Export backup
-          </button>
+          {canEdit && (
+            <button
+              className="text-button"
+              onClick={async () => {
+                setExportError("");
+                try {
+                  await exportReading(mode);
+                  setMessage(
+                    "Reading backup downloaded. Keep it somewhere safe.",
+                  );
+                } catch {
+                  setExportError(
+                    "Couldn’t export your books. Browser storage may be unavailable.",
+                  );
+                }
+              }}
+            >
+              <Icon name="download" size={15} />
+              Export backup
+            </button>
+          )}
         </div>
         {exportError && (
           <p className="reading-error" role="alert">
@@ -228,6 +236,7 @@ export function ReadingWorkspace() {
               <BookCard
                 key={book.id}
                 book={book}
+                canEdit={canEdit}
                 disabled={busy || !ready}
                 onSave={save}
                 onRemove={remove}
@@ -252,7 +261,9 @@ export function ReadingWorkspace() {
             <p>
               {books.length
                 ? "Try another shelf or search for a different title or author."
-                : "Add a book you’ve been meaning to read. A few pages at a time is plenty."}
+                : canEdit
+                  ? "Add a book you’ve been meaning to read. A few pages at a time is plenty."
+                  : "No books have been shared yet."}
             </p>
             {books.length > 0 && (
               <button
@@ -272,9 +283,11 @@ export function ReadingWorkspace() {
       <footer className="reading-footer">
         <span>A few pages today. A different perspective tomorrow.</span>
         <span>
-          {mode === "cloud"
-            ? "Saved to your private account. Export a backup to keep a copy."
-            : "Saved in this browser only. Export a backup to keep a copy."}
+          {mode === "local"
+            ? "Saved in this browser only. Export a backup to keep a copy."
+            : canEdit
+              ? "Only you can add books and notes."
+              : "Open to read. Only the owner can make changes."}
         </span>
       </footer>
     </div>

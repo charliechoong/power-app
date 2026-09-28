@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { requireOwner, AccessError } from "@/lib/server/auth";
+import { requireOwner } from "@/lib/server/auth";
 import { storageMode } from "@/lib/server/config";
+import { EditAccessProvider } from "@/lib/edit-access";
 
 export const dynamic = "force-dynamic";
 
@@ -10,24 +10,18 @@ export default async function PrivateLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (storageMode() === "cloud") {
+  let canEdit = storageMode() === "local";
+  if (!canEdit) {
     try {
       await requireOwner();
-    } catch (error) {
-      if (error instanceof AccessError && error.status === 401)
-        redirect("/login");
-      return (
-        <main className="account-page">
-          <h1>Private space unavailable</h1>
-          <p>
-            Check your cloud configuration and account access, then try again.
-          </p>
-          <a className="text-button" href="/login">
-            Go to sign in
-          </a>
-        </main>
-      );
+      canEdit = true;
+    } catch {
+      // Visitors can read public content; only a verified owner can edit.
     }
   }
-  return <AppShell>{children}</AppShell>;
+  return (
+    <EditAccessProvider canEdit={canEdit}>
+      <AppShell>{children}</AppShell>
+    </EditAccessProvider>
+  );
 }

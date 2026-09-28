@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { cloudConfig } from "./config";
 
@@ -25,5 +26,12 @@ export async function createSupabaseServerClient() {
         }
       },
     },
+  });
+}
+
+export function createPublicReadClient() {
+  const config = cloudConfig();
+  return createClient(config.url, config.key, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 }

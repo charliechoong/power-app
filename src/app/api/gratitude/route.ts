@@ -1,9 +1,14 @@
 import { gratitudeServer } from "@/features/gratitude/server-repository";
 import { validateGratitudeInput } from "@/features/gratitude/model";
-import { ownerRoute, readJson, validate } from "@/lib/server/http";
+import {
+  ownerRoute,
+  publicReadRoute,
+  readJson,
+  validate,
+} from "@/lib/server/http";
 
-export async function GET(request: Request) {
-  return ownerRoute(request, (context) => gratitudeServer(context).list());
+export async function GET() {
+  return publicReadRoute((context) => gratitudeServer(context).list());
 }
 
 export async function POST(request: Request) {

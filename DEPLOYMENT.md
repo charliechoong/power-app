@@ -14,6 +14,7 @@ Opening `localhost`, a different port, or the hosted domain cannot read that ori
 2. Apply `supabase/migrations/202609260001_cloud_foundation.sql` once to the new project using Supabase migration tooling or its SQL editor. It creates domain tables, constraints, owner policies, and the transactional importer. Do not run it against an unrelated existing project.
    Apply `supabase/migrations/202609270001_gratitude.sql` after the foundation migration to add Gratitude storage and extend the importer.
    Apply `supabase/migrations/202609270002_gratitude_titles.sql` afterward to add optional titles while preserving existing Gratitude entries.
+   Apply `supabase/migrations/20260928135825_public_read_owner_write.sql` last to allow public reading of all current content while keeping writes owner-only. Apply it only if you intend to make every existing reflection, quote, book, note, and gratitude entry public.
 3. In Authentication settings, disable new user signups and anonymous sign-ins. Keep email/password sign-in enabled.
 4. In Authentication → Users, manually create your own email/password user with email confirmed. Choose and store the password privately; it is not an application environment variable. There is no public registration or password-reset flow in this MVP. Account recovery is administered through Supabase; configure custom SMTP before relying on email recovery.
 5. Copy that auth user's UUID and allowlist it in SQL:
@@ -47,12 +48,12 @@ Keep production credentials out of Preview environments until you deliberately w
 
 ## 4. Verify and import
 
-1. Open the deployed site in a signed-out browser: private pages must go to sign-in, and GET `/api/reading`, `/api/reflections`, and `/api/data/export` must return 401 without private content. Missing configuration returns 503 instead.
+1. Open the deployed site in a signed-out browser: Reflections, Reading (including book notes), and Gratitude must load; GET `/api/reading`, `/api/reflections`, and `/api/gratitude` must return public content. The backup page must redirect to sign-in and `/api/data/export` must still return 401. Missing configuration returns 503 instead.
 2. Sign in with your manually created owner account. Confirm HTTPS session cookies are HttpOnly, Secure, SameSite=Lax and private responses use `Cache-Control: private, no-store`.
 3. Open **Data & backups**, select the original complete JSON backup, and choose **Preview cloud import**. Check the counts.
 4. Choose **Import into my account**. Import assigns ownership on the server and commits all records in one database transaction. Repeating an import skips existing IDs; existing books and their incoming notes are skipped together rather than merged or overwritten.
 5. Check **Verification**. It compares all fields, normalized timestamps, and notes—not just totals. Resolve any differences before considering the migration complete. If verification fails due to a connection error, retry verification; keep the backup.
-6. Inspect a reflection, a book's page progress, and its notes. Refresh, then sign in from another device and confirm the same data is present. Sign out and confirm the APIs reject requests again.
+6. Inspect a reflection, a book's page progress, and its notes. Refresh, then sign in from another device and confirm the same data is present. Sign out and confirm the content stays readable while create, edit, delete, and import requests are rejected.
 7. Download a fresh cloud backup. Retain the original browser data and export until you are satisfied with the migration.
 
 Imports accept one to ten version 1 JSON files, at most 10,000 top-level records and a combined request under 3 MB (below Vercel's function request limit). Larger backups need to be split at record boundaries. Exports page through all database rows. Avoid concurrent edits during migration and export; multi-request exports are not transaction snapshots.

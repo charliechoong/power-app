@@ -13,11 +13,13 @@ import { BookForm } from "./book-form";
 
 export function BookCard({
   book,
+  canEdit,
   disabled,
   onSave,
   onRemove,
 }: {
   book: Book;
+  canEdit: boolean;
   disabled: boolean;
   onSave: (input: BookInput, existing: Book) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
@@ -52,15 +54,17 @@ export function BookCard({
           {book.status === "finished" && <Icon name="check" size={13} />}
           {STATUS_LABELS[book.status]}
         </span>
-        <button
-          className="icon-button"
-          aria-label={`Delete ${book.title}`}
-          title="Delete book"
-          disabled={disabled || busy}
-          onClick={() => setConfirmDelete(true)}
-        >
-          <Icon name="trash" size={16} />
-        </button>
+        {canEdit && (
+          <button
+            className="icon-button"
+            aria-label={`Delete ${book.title}`}
+            title="Delete book"
+            disabled={disabled || busy}
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Icon name="trash" size={16} />
+          </button>
+        )}
       </div>
       <div className="reading-book-info">
         <div className="reading-book-mark" aria-hidden="true">
@@ -111,7 +115,7 @@ export function BookCard({
         View notes <span>{book.notes.length}</span>
         <Icon name="arrow" size={15} />
       </Link>
-      {!editing && (
+      {canEdit && !editing && (
         <div className="reading-book-actions">
           <button
             className="text-button"
@@ -136,7 +140,7 @@ export function BookCard({
           )}
         </div>
       )}
-      {editing && (
+      {canEdit && editing && (
         <BookForm
           book={book}
           disabled={disabled || busy}
@@ -147,7 +151,7 @@ export function BookCard({
           }}
         />
       )}
-      {confirmDelete && (
+      {canEdit && confirmDelete && (
         <div
           className="reading-delete"
           role="group"

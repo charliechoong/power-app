@@ -16,10 +16,12 @@ import {
   exportReflections,
 } from "../client-repository";
 import { useStorageMode } from "@/lib/storage-mode";
+import { useCanEdit } from "@/lib/edit-access";
 
 export function ReflectionsWorkspace() {
   const localRepository = useReflectionsRepository();
   const mode = useStorageMode();
+  const canEdit = useCanEdit();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState("");
@@ -98,7 +100,7 @@ export function ReflectionsWorkspace() {
   };
 
   async function save() {
-    if (busyRef.current || !ready) return;
+    if (!canEdit || busyRef.current || !ready) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -135,7 +137,7 @@ export function ReflectionsWorkspace() {
   }
 
   async function remove(id: string) {
-    if (busyRef.current) return;
+    if (!canEdit || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -186,117 +188,121 @@ export function ReflectionsWorkspace() {
             Thoughts of your own. Words that stay with you.
           </p>
         </div>
-        <button className="button primary new-entry" onClick={focusCapture}>
-          <Icon name="plus" size={17} /> Capture a thought
-        </button>
+        {canEdit && (
+          <button className="button primary new-entry" onClick={focusCapture}>
+            <Icon name="plus" size={17} /> Capture a thought
+          </button>
+        )}
       </div>
 
-      <section
-        className="composer"
-        ref={composer}
-        aria-label={editing ? "Edit entry" : "Capture a thought"}
-      >
-        <div className="composer-top">
-          <div className="kind-tabs" role="group" aria-label="Entry type">
-            <button
-              aria-pressed={kind === "reflection"}
-              className={kind === "reflection" ? "selected" : ""}
-              onClick={() => setKind("reflection")}
-              disabled={busy}
-            >
-              <Icon name="book" size={16} /> Reflection
-            </button>
-            <button
-              aria-pressed={kind === "quote"}
-              className={kind === "quote" ? "selected" : ""}
-              onClick={() => setKind("quote")}
-              disabled={busy}
-            >
-              <Icon name="quote" size={16} /> Quote
-            </button>
-          </div>
-          <span className="composer-hint">
-            {editing ? "EDITING ENTRY" : "MAKE A LITTLE ROOM FOR A THOUGHT"}
-          </span>
-        </div>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
+      {canEdit && (
+        <section
+          className="composer"
+          ref={composer}
+          aria-label={editing ? "Edit entry" : "Capture a thought"}
         >
-          <label className="sr-only" htmlFor="entry-content">
-            {kind === "reflection" ? "Your reflection" : "Quote text"}
-          </label>
-          <textarea
-            id="entry-content"
-            ref={textarea}
-            placeholder={
-              kind === "reflection"
-                ? "What’s on your mind?"
-                : "What words do you want to keep?"
-            }
-            value={content}
-            maxLength={CONTENT_LIMIT}
-            disabled={busy}
-            onChange={(event) => {
-              setContent(event.target.value);
-              setStatus("");
-            }}
-            onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                event.preventDefault();
-                if (content.trim()) void save();
-              }
-            }}
-          />
-          {kind === "quote" && (
-            <div className="attribution-field">
-              <label htmlFor="attribution">
-                Attribution <span>(optional)</span>
-              </label>
-              <input
-                id="attribution"
-                placeholder="Author, book, or where you found it"
-                value={attribution}
-                maxLength={300}
-                disabled={busy}
-                onChange={(event) => setAttribution(event.target.value)}
-              />
-            </div>
-          )}
-          <div className="composer-footer">
-            <span className="capture-note">
-              No title needed. Just let it out.
-            </span>
-            <div className="save-actions">
-              {editing && (
-                <button
-                  type="button"
-                  className="text-button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (!window.confirm("Discard your unsaved changes?"))
-                      return;
-                    reset();
-                  }}
-                >
-                  Cancel
-                </button>
-              )}
-              <span className="keyboard-hint">⌘ / Ctrl + Enter</span>
+          <div className="composer-top">
+            <div className="kind-tabs" role="group" aria-label="Entry type">
               <button
-                type="submit"
-                className="button primary"
-                disabled={!content.trim() || busy || !ready}
+                aria-pressed={kind === "reflection"}
+                className={kind === "reflection" ? "selected" : ""}
+                onClick={() => setKind("reflection")}
+                disabled={busy}
               >
-                {busy ? "Saving…" : editing ? "Save changes" : "Save thought"}
-                <Icon name="arrow" size={16} />
+                <Icon name="book" size={16} /> Reflection
+              </button>
+              <button
+                aria-pressed={kind === "quote"}
+                className={kind === "quote" ? "selected" : ""}
+                onClick={() => setKind("quote")}
+                disabled={busy}
+              >
+                <Icon name="quote" size={16} /> Quote
               </button>
             </div>
+            <span className="composer-hint">
+              {editing ? "EDITING ENTRY" : "MAKE A LITTLE ROOM FOR A THOUGHT"}
+            </span>
           </div>
-        </form>
-      </section>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void save();
+            }}
+          >
+            <label className="sr-only" htmlFor="entry-content">
+              {kind === "reflection" ? "Your reflection" : "Quote text"}
+            </label>
+            <textarea
+              id="entry-content"
+              ref={textarea}
+              placeholder={
+                kind === "reflection"
+                  ? "What’s on your mind?"
+                  : "What words do you want to keep?"
+              }
+              value={content}
+              maxLength={CONTENT_LIMIT}
+              disabled={busy}
+              onChange={(event) => {
+                setContent(event.target.value);
+                setStatus("");
+              }}
+              onKeyDown={(event) => {
+                if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                  event.preventDefault();
+                  if (content.trim()) void save();
+                }
+              }}
+            />
+            {kind === "quote" && (
+              <div className="attribution-field">
+                <label htmlFor="attribution">
+                  Attribution <span>(optional)</span>
+                </label>
+                <input
+                  id="attribution"
+                  placeholder="Author, book, or where you found it"
+                  value={attribution}
+                  maxLength={300}
+                  disabled={busy}
+                  onChange={(event) => setAttribution(event.target.value)}
+                />
+              </div>
+            )}
+            <div className="composer-footer">
+              <span className="capture-note">
+                No title needed. Just let it out.
+              </span>
+              <div className="save-actions">
+                {editing && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    disabled={busy}
+                    onClick={() => {
+                      if (!window.confirm("Discard your unsaved changes?"))
+                        return;
+                      reset();
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+                <span className="keyboard-hint">⌘ / Ctrl + Enter</span>
+                <button
+                  type="submit"
+                  className="button primary"
+                  disabled={!content.trim() || busy || !ready}
+                >
+                  {busy ? "Saving…" : editing ? "Save changes" : "Save thought"}
+                  <Icon name="arrow" size={16} />
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+      )}
       <div className="feedback" aria-live="polite" role="status">
         {status && (
           <>
@@ -324,23 +330,25 @@ export function ReflectionsWorkspace() {
           <h2 id="collection-heading">
             Your collection <span>{entries.length}</span>
           </h2>
-          <button
-            className="text-button export-button"
-            onClick={async () => {
-              try {
-                await exportReflections(mode);
-                setStatus(
-                  "Backup downloaded. Keep this file somewhere safe; it contains your entries.",
-                );
-              } catch {
-                setError(
-                  "Couldn’t download a backup. Browser storage may be unavailable.",
-                );
-              }
-            }}
-          >
-            <Icon name="download" size={15} /> Export backup
-          </button>
+          {canEdit && (
+            <button
+              className="text-button export-button"
+              onClick={async () => {
+                try {
+                  await exportReflections(mode);
+                  setStatus(
+                    "Backup downloaded. Keep this file somewhere safe; it contains your entries.",
+                  );
+                } catch {
+                  setError(
+                    "Couldn’t download a backup. Browser storage may be unavailable.",
+                  );
+                }
+              }}
+            >
+              <Icon name="download" size={15} /> Export backup
+            </button>
+          )}
         </div>
         <div className="collection-toolbar">
           <div className="filter-tabs" role="group" aria-label="Filter entries">
@@ -409,11 +417,11 @@ export function ReflectionsWorkspace() {
               >
                 Clear filters <Icon name="arrow" size={16} />
               </button>
-            ) : (
+            ) : canEdit ? (
               <button className="text-button empty-cta" onClick={focusCapture}>
                 Capture your first thought <Icon name="arrow" size={16} />
               </button>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="entry-grid">
@@ -451,28 +459,30 @@ export function ReflectionsWorkspace() {
                       ? "Edited"
                       : "Kept for later"}
                   </span>
-                  <div>
-                    <button
-                      className="icon-button"
-                      aria-label="Edit entry"
-                      title="Edit entry"
-                      disabled={busy}
-                      onClick={() => edit(entry)}
-                    >
-                      <Icon name="edit" size={16} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label="Delete entry"
-                      title="Delete entry"
-                      disabled={busy}
-                      onClick={() => setPendingDelete(entry.id)}
-                    >
-                      <Icon name="trash" size={16} />
-                    </button>
-                  </div>
+                  {canEdit && (
+                    <div>
+                      <button
+                        className="icon-button"
+                        aria-label="Edit entry"
+                        title="Edit entry"
+                        disabled={busy}
+                        onClick={() => edit(entry)}
+                      >
+                        <Icon name="edit" size={16} />
+                      </button>
+                      <button
+                        className="icon-button"
+                        aria-label="Delete entry"
+                        title="Delete entry"
+                        disabled={busy}
+                        onClick={() => setPendingDelete(entry.id)}
+                      >
+                        <Icon name="trash" size={16} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                {pendingDelete === entry.id && (
+                {canEdit && pendingDelete === entry.id && (
                   <div
                     className="delete-confirm"
                     role="group"
@@ -505,9 +515,11 @@ export function ReflectionsWorkspace() {
       <footer className="page-footer">
         <span>A place to collect, not to perfect.</span>
         <span>
-          {mode === "cloud"
-            ? "Saved to your private account. Export a backup to keep a copy."
-            : "Saved in this browser only. Export a backup to keep a copy."}
+          {mode === "local"
+            ? "Saved in this browser only. Export a backup to keep a copy."
+            : canEdit
+              ? "Only you can add or edit entries."
+              : "Open to read. Only the owner can add or edit entries."}
         </span>
       </footer>
     </div>

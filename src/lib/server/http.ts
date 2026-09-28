@@ -1,8 +1,29 @@
 import "server-only";
 import { AccessError, requireOwner } from "./auth";
+import { cloudConfig, storageMode } from "./config";
+import { createPublicReadClient } from "./supabase";
 
 export class InputError extends Error {}
 export type OwnerContext = Awaited<ReturnType<typeof requireOwner>>;
+
+export async function publicReadRoute(
+  action: (context: OwnerContext) => Promise<unknown>,
+) {
+  try {
+    if (storageMode() !== "cloud")
+      throw new AccessError(503, "Cloud storage is not configured.");
+    const { owner } = cloudConfig();
+    const data = await action({ db: createPublicReadClient(), owner });
+    return Response.json(data ?? null, {
+      headers: { "Cache-Control": "public, no-store" },
+    });
+  } catch {
+    return Response.json(
+      { error: "Content is unavailable. Please try again later." },
+      { status: 503, headers: { "Cache-Control": "public, no-store" } },
+    );
+  }
+}
 
 export function assertSameOrigin(request: Request) {
   if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
