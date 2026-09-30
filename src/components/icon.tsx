@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 type Name =
+  | "home"
   | "spark"
   | "book"
   | "quote"
@@ -13,6 +14,12 @@ type Name =
   | "device"
   | "heart";
 const paths: Record<Name, React.ReactNode> = {
+  home: (
+    <>
+      <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" />
+      <path d="M9 21v-7h6v7" />
+    </>
+  ),
   spark: (
     <>
       <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />

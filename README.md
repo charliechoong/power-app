@@ -11,8 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The home route redirects to `/reflections`.
-Use the navigation to switch between Reflections, Reading (`/reading`), and Gratitude (`/gratitude`).
+Open http://localhost:3000. The homepage features a daily quote and links to Reflections, Reading (`/reading`), and Gratitude (`/gratitude`). The quote changes at midnight Singapore time and uses original lines bundled with the app, so it does not rely on an external service.
 
 ```sh
 npm run lint
@@ -34,6 +33,7 @@ Webpack is explicitly selected for development and production builds because Tur
 
 ## MVP
 
+- A homepage with a daily quote and entry points to the current sections.
 - Text-first capture, with reflection/quote toggle and optional quote attribution.
 - Save with one button or Command/Ctrl + Enter; no title or categorization required.
 - Search content and attribution; filter by entry type.
@@ -71,6 +71,7 @@ src/
   data-transfer/             Application-level backup/import composition
   components/                Shared application shell and icon primitive
   features/
+    home/                     Daily quote selection and homepage presentation
     reflections/
       index.ts               Public UI entry point
       model.ts               Domain types, validation, search

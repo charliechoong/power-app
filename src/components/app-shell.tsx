@@ -14,6 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const canEdit = useCanEdit();
   const [logoutError, setLogoutError] = useState("");
   const sections = [
+    { href: "/", label: "Home", icon: "home" as const },
     { href: "/reflections", label: "Reflections", icon: "spark" as const },
     { href: "/reading", label: "Reading", icon: "book" as const },
     { href: "/gratitude", label: "Gratitude", icon: "heart" as const },
@@ -29,7 +30,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
   const current = sections.find(
     (section) =>
-      pathname === section.href || pathname.startsWith(section.href + "/"),
+      pathname === section.href ||
+      (section.href !== "/" && pathname.startsWith(section.href + "/")),
   );
   return (
     <div className="app-shell">
