@@ -19,6 +19,9 @@ test("homepage shows today's quote and links to every current section", async ({
   await expect(
     page.getByRole("link", { name: /Read gratitude/ }),
   ).toHaveAttribute("href", "/gratitude");
+  await expect(
+    page.getByRole("link", { name: /Explore plans/ }),
+  ).toHaveAttribute("href", "/plans");
   await page.getByRole("link", { name: /Explore reflections/ }).click();
   await expect(
     page.getByRole("heading", { name: "Reflections." }),

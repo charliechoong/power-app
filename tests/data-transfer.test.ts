@@ -48,6 +48,21 @@ const source: ImportData = {
       updatedAt: date,
     },
   ],
+  plans: [
+    {
+      id: "plan-1",
+      title: "Take a course",
+      kind: "course",
+      details: "",
+      url: "",
+      status: "doing",
+      current: 2,
+      target: 10,
+      unit: "lessons",
+      createdAt: date,
+      updatedAt: date,
+    },
+  ],
 };
 
 test("combined and overlapping backups preserve all data and deduplicate identical IDs", () => {
@@ -59,6 +74,7 @@ test("combined and overlapping backups preserve all data and deduplicate identic
     matchedBooks: 1,
     matchedNotes: 1,
     matchedGratitudes: 1,
+    matchedPlans: 1,
     differences: [],
   });
 });

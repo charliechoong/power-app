@@ -46,6 +46,21 @@ const payload = {
       updatedAt: date,
     },
   ],
+  plans: [
+    {
+      id: "p1",
+      title: "Take a course",
+      kind: "course",
+      details: "Learn a skill",
+      url: "https://example.com",
+      status: "doing",
+      current: 2,
+      target: 10,
+      unit: "lessons",
+      createdAt: date,
+      updatedAt: date,
+    },
+  ],
 };
 
 test("cloud schema preserves owner writes and opens content for public reading", async () => {
@@ -92,6 +107,15 @@ test("cloud schema preserves owner writes and opens content for public reading",
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261001080749_plans.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     assert.equal(
       (
         await db.query<{ title: string }>(
@@ -102,6 +126,14 @@ test("cloud schema preserves owner writes and opens content for public reading",
     );
     await db.query("insert into app_private.owners values ($1)", [owner]);
     await db.exec("set role anon");
+    assert.deepEqual((await db.query("select * from public.plans")).rows, []);
+    await assert.rejects(
+      db.query(
+        "insert into public.plans(owner_id,id,title,kind,status) values ($1,'bad','Bad','task','planned')",
+        [owner],
+      ),
+      /permission denied/,
+    );
     await assert.rejects(
       db.query("select * from public.reflections"),
       /permission denied/,
@@ -156,6 +188,8 @@ test("cloud schema preserves owner writes and opens content for public reading",
       notesSkipped: 0,
       gratitudesAdded: 1,
       gratitudesSkipped: 0,
+      plansAdded: 1,
+      plansSkipped: 0,
     };
     assert.deepEqual(await runImport(payload, true), added);
     assert.equal(
@@ -163,6 +197,10 @@ test("cloud schema preserves owner writes and opens content for public reading",
       0,
     );
     assert.deepEqual(await runImport(payload, false), added);
+    assert.equal(
+      (await db.query("select * from public.plans where id='p1'")).rows.length,
+      1,
+    );
     assert.equal(
       (
         await db.query<{ title: string }>(
@@ -203,6 +241,8 @@ test("cloud schema preserves owner writes and opens content for public reading",
       notesSkipped: 1,
       gratitudesAdded: 0,
       gratitudesSkipped: 1,
+      plansAdded: 0,
+      plansSkipped: 1,
     });
     assert.equal(
       (

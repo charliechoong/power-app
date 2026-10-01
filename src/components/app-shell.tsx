@@ -17,6 +17,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Home", icon: "home" as const },
     { href: "/reflections", label: "Reflections", icon: "spark" as const },
     { href: "/reading", label: "Reading", icon: "book" as const },
+    { href: "/plans", label: "Plans", icon: "list" as const },
     { href: "/gratitude", label: "Gratitude", icon: "heart" as const },
     ...(canEdit
       ? [
@@ -81,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 ? "Local storage · no cloud sync"
                 : canEdit
                   ? "Only you can edit"
-                  : "Read reflections, books and gratitude"}
+                  : "Read reflections, books, plans and gratitude"}
             </p>
           </div>
         </div>

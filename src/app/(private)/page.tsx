@@ -29,6 +29,13 @@ const sections = [
     description: "Experiences you are glad to remember.",
     action: "Read gratitude",
   },
+  {
+    href: "/plans",
+    name: "Plans",
+    icon: "list" as const,
+    description: "Books, courses, questions and projects to move forward.",
+    action: "Explore plans",
+  },
 ];
 
 export default function HomePage() {
@@ -40,7 +47,7 @@ export default function HomePage() {
       <header className="home-intro">
         <p className="eyebrow">A PERSONAL COLLECTION</p>
         <h1>Make space for what matters.</h1>
-        <p>Thoughts, books, and moments to come back to.</p>
+        <p>Thoughts, books, plans, and moments to come back to.</p>
       </header>
 
       <section className="daily-quote" aria-labelledby="daily-quote-heading">

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
-test("complete backup includes both domains and notes without changing browser data", async ({
+test("complete backup includes plans and notes without changing browser data", async ({
   page,
 }) => {
   await page.goto("/settings/data");
@@ -33,6 +33,19 @@ test("complete backup includes both domains and notes without changing browser d
         },
       ],
     }),
+    "personal-hub:plans:v1:p1": JSON.stringify({
+      id: "p1",
+      title: "Take a course",
+      kind: "course",
+      details: "",
+      url: "",
+      status: "planned",
+      current: 0,
+      target: 5,
+      unit: "lessons",
+      createdAt: date,
+      updatedAt: date,
+    }),
   };
   await page.evaluate((values) => {
     for (const [key, value] of Object.entries(values))
@@ -43,7 +56,7 @@ test("complete backup includes both domains and notes without changing browser d
     .click();
   await expect(
     page.getByText(
-      "1 reflections/quotes, 0 images, 1 books, 1 notes, 0 gratitude entries.",
+      "1 reflections/quotes, 0 images, 1 books, 1 notes, 0 gratitude entries, 1 plans.",
     ),
   ).toBeVisible();
   await expect(
@@ -64,6 +77,7 @@ test("cloud endpoints fail closed in local mode and reject cross-origin writes",
   for (const route of [
     "/api/reading",
     "/api/reflections",
+    "/api/plans",
     "/api/data/export",
   ]) {
     const response = await request.get(route);

@@ -47,7 +47,7 @@ test("capture, bold, edit, back up, and delete an experience", async ({
     .getByRole("button", { name: "Use data saved in this browser" })
     .click();
   await expect(
-    page.getByText("1 gratitude entries.", { exact: false }),
+    page.getByText("1 gratitude entries, 0 plans.", { exact: false }),
   ).toBeVisible();
   await page.goto("/gratitude");
   await page.getByRole("button", { name: "Delete", exact: true }).click();

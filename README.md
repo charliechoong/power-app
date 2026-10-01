@@ -1,6 +1,6 @@
 # Commonplace — a personal hub
 
-A modular Next.js monolith with independent Reflections, Reading, and Gratitude domains. Finance and other future modules are not implemented.
+A modular Next.js monolith with independent Reflections, Reading, Gratitude, and Plans domains. Finance and other future modules are not implemented.
 
 ## Run locally
 
@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The homepage features one of 180 original quotes and a related reflection question, plus links to Reflections, Reading (`/reading`), and Gratitude (`/gratitude`). The quote and prompt change together at midnight Singapore time. The quote rotation repeats after 180 days and does not rely on an external service.
+Open http://localhost:3000. The homepage features one of 180 original quotes and a related reflection question, plus links to Reflections, Reading (`/reading`), Gratitude (`/gratitude`), and Plans (`/plans`). The quote and prompt change together at midnight Singapore time. The quote rotation repeats after 180 days and does not rely on an external service.
 
 ```sh
 npm run lint
@@ -59,7 +59,14 @@ Webpack is explicitly selected for development and production builds because Tur
 - Select words in the writing box and tap **Bold** (or use Command/Ctrl+B). Bold phrases show in the live preview and saved entries. Only bold markup is supported; text is rendered safely without HTML.
 - Entries are included in complete JSON backups and cloud import verification.
 
-There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all three domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Images are included in ZIP backups alongside the version 1 JSON manifest; old JSON backups still import. Backups are unencrypted private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
+### Plans
+
+- Add a plan with only a title. Classify it as a task, book, course, question, or project.
+- Move it from To do to In progress to Done with one click. Add optional notes, a link, and a numeric goal such as pages, lessons, or steps. Use +1 to update measured progress.
+- Filter by status, search, edit, reopen, or delete. Plans are included in complete backups, cloud import, and verification.
+- Reading remains the place for book notes and detailed reading progress; Plans does not duplicate those records or depend on the Reading domain.
+
+There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all four domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Images are included in ZIP backups alongside the version 1 JSON manifest; old JSON backups still import. Backups are unencrypted private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
 
 ## Architecture
 

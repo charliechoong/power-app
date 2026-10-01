@@ -28,7 +28,7 @@ test("bold markup renders only selected phrases and backup preserves them", () =
     createdAt: "2026-09-27T00:00:00.000Z",
     updatedAt: "2026-09-27T00:00:00.000Z",
   };
-  const data = { entries: [], books: [], gratitudes: [entry] };
+  const data = { entries: [], books: [], gratitudes: [entry], plans: [] };
   const restored = parseBackups([makeBackup(data)]);
   assert.deepEqual(restored, data);
   assert.deepEqual(verifyImport(data, restored).differences, []);
@@ -74,7 +74,7 @@ test("gratitude images and captions verify across local and cloud paths", () => 
     updatedAt: "2026-09-27T00:00:00.000Z",
   };
   const restored = parseBackups([
-    makeBackup({ entries: [], books: [], gratitudes: [local] }),
+    makeBackup({ entries: [], books: [], gratitudes: [local], plans: [] }),
   ]);
   assert.equal(restored.gratitudes[0].imageCaption, "At sunset");
   assert.equal(
@@ -82,6 +82,7 @@ test("gratitude images and captions verify across local and cloud paths", () => 
       entries: [],
       books: [],
       gratitudes: [{ ...local, imagePath: "owner/new.webp" }],
+      plans: [],
     }).matchedGratitudes,
     1,
   );
@@ -90,6 +91,7 @@ test("gratitude images and captions verify across local and cloud paths", () => 
       entries: [],
       books: [],
       gratitudes: [{ ...local, imagePath: undefined }],
+      plans: [],
     }).differences.length,
     1,
   );
