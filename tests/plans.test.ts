@@ -75,7 +75,13 @@ test("plans persist independently and round-trip through complete backups", asyn
   const updated = await repository.save({ ...first, current: 2 }, first);
   assert.equal(updated.status, "doing");
   assert.equal(updated.createdAt, first.createdAt);
-  const data = { entries: [], books: [], gratitudes: [], plans: [updated] };
+  const data = {
+    entries: [],
+    books: [],
+    gratitudes: [],
+    plans: [updated],
+    subscriptions: [],
+  };
   const restored = parseBackups([makeBackup(data)]);
   assert.deepEqual(restored, data);
   assert.equal(verifyImport(data, restored).matchedPlans, 1);

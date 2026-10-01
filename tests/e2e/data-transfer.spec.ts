@@ -46,6 +46,19 @@ test("complete backup includes plans and notes without changing browser data", a
       createdAt: date,
       updatedAt: date,
     }),
+    "personal-hub:subscriptions:v1:s1": JSON.stringify({
+      id: "s1",
+      name: "GPT Pro",
+      amount: 200,
+      currency: "USD",
+      billingCycle: "monthly",
+      nextRenewal: "2026-11-01",
+      status: "active",
+      url: "",
+      notes: "",
+      createdAt: date,
+      updatedAt: date,
+    }),
   };
   await page.evaluate((values) => {
     for (const [key, value] of Object.entries(values))
@@ -56,7 +69,7 @@ test("complete backup includes plans and notes without changing browser data", a
     .click();
   await expect(
     page.getByText(
-      "1 reflections/quotes, 0 images, 1 books, 1 notes, 0 gratitude entries, 1 plans.",
+      "1 reflections/quotes, 0 images, 1 books, 1 notes, 0 gratitude entries, 1 plans, 1 subscriptions.",
     ),
   ).toBeVisible();
   await expect(
@@ -78,6 +91,7 @@ test("cloud endpoints fail closed in local mode and reject cross-origin writes",
     "/api/reading",
     "/api/reflections",
     "/api/plans",
+    "/api/subscriptions",
     "/api/data/export",
   ]) {
     const response = await request.get(route);

@@ -63,6 +63,21 @@ const source: ImportData = {
       updatedAt: date,
     },
   ],
+  subscriptions: [
+    {
+      id: "subscription-1",
+      name: "GPT Pro",
+      amount: 200,
+      currency: "USD",
+      billingCycle: "monthly",
+      nextRenewal: "2026-11-01",
+      status: "active",
+      url: "",
+      notes: "",
+      createdAt: date,
+      updatedAt: date,
+    },
+  ],
 };
 
 test("combined and overlapping backups preserve all data and deduplicate identical IDs", () => {
@@ -75,6 +90,7 @@ test("combined and overlapping backups preserve all data and deduplicate identic
     matchedNotes: 1,
     matchedGratitudes: 1,
     matchedPlans: 1,
+    matchedSubscriptions: 1,
     differences: [],
   });
 });

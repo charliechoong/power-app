@@ -34,7 +34,7 @@ const sections = [
     href: "/plans",
     name: "Plans",
     icon: "list" as const,
-    description: "Books, courses, questions and projects to move forward.",
+    description: "Goals, projects, and subscriptions to keep track of.",
     action: "Explore plans",
   },
 ];

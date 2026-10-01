@@ -1,7 +1,7 @@
 .plans-page {
   max-width: 1180px;
   margin: 0 auto;
-  padding: 55px 56px 90px;
+  padding: 55px 56px 30px;
   color: #344c3b;
 }
 .plans-heading {
@@ -347,7 +347,7 @@
 }
 @media (max-width: 1000px) {
   .plans-page {
-    padding: 42px 34px 75px;
+    padding: 42px 34px 25px;
   }
   .plans-extra-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -355,7 +355,7 @@
 }
 @media (max-width: 700px) {
   .plans-page {
-    padding: 34px 19px 65px;
+    padding: 34px 19px 20px;
   }
   .plans-quick-row {
     flex-wrap: wrap;

@@ -4,7 +4,7 @@ The intended setup is Vercel Hobby plus Supabase Free in Singapore (`ap-southeas
 
 ## 1. Preserve the current data
 
-Open the **original browser profile and exact origin** currently used (`http://127.0.0.1:3101`). Go to **Data & backups → Download complete backup**. Store the JSON or ZIP somewhere private. It includes reflections, quotes, books, progress, book notes, plans, gratitude entries, and their images. Keep the original local data as well.
+Open the **original browser profile and exact origin** currently used (`http://127.0.0.1:3101`). Go to **Data & backups → Download complete backup**. Store the JSON or ZIP somewhere private. It includes reflections, quotes, books, progress, book notes, plans, subscriptions, gratitude entries, and their images. Keep the original local data as well.
 
 Opening `localhost`, a different port, or the hosted domain cannot read that origin's localStorage. Use the downloaded file on the hosted app. Do not copy the contents into source code, chat, or environment variables.
 
@@ -17,7 +17,8 @@ Opening `localhost`, a different port, or the hosted domain cannot read that ori
    Apply `supabase/migrations/20260928135825_public_read_owner_write.sql` next to allow public reading of all current content while keeping writes owner-only. Apply it only if you intend to make every existing reflection, quote, book, note, and gratitude entry public.
    Apply `supabase/migrations/202610010001_reflection_images.sql` to add reflection images and a public Storage bucket with owner-only upload and deletion.
    Apply `supabase/migrations/20261001072817_gratitude_images.sql` to add the same image support for Gratitude.
-   Apply `supabase/migrations/20261001080749_plans.sql` last to add Plans and extend the transactional importer.
+   Apply `supabase/migrations/20261001080749_plans.sql` to add Plans and extend the transactional importer.
+   Apply `supabase/migrations/20261001091248_subscriptions.sql` last to add Subscriptions and extend the importer again.
 3. In Authentication settings, disable new user signups and anonymous sign-ins. Keep email/password sign-in enabled.
 4. In Authentication → Users, manually create your own email/password user with email confirmed. Choose and store the password privately; it is not an application environment variable. There is no public registration or password-reset flow in this MVP. Account recovery is administered through Supabase; configure custom SMTP before relying on email recovery.
 5. Copy that auth user's UUID and allowlist it in SQL:
@@ -51,7 +52,7 @@ Keep production credentials out of Preview environments until you deliberately w
 
 ## 4. Verify and import
 
-1. Open the deployed site in a signed-out browser: Reflections, Reading (including book notes), Gratitude, and Plans must load; GET `/api/reading`, `/api/reflections`, `/api/gratitude`, and `/api/plans` must return public content. The backup page must redirect to sign-in and `/api/data/export` must still return 401. Missing configuration returns 503 instead.
+1. Open the deployed site in a signed-out browser: Reflections, Reading (including book notes), Gratitude, Plans, and Subscriptions (inside Plans) must load; GET `/api/reading`, `/api/reflections`, `/api/gratitude`, `/api/plans`, and `/api/subscriptions` must return public content. The backup page must redirect to sign-in and `/api/data/export` must still return 401. Missing configuration returns 503 instead.
 2. Sign in with your manually created owner account. Confirm HTTPS session cookies are HttpOnly, Secure, SameSite=Lax and private responses use `Cache-Control: private, no-store`.
 3. Open **Data & backups**, select the original complete JSON or ZIP backup, and choose **Preview cloud import**. Check the counts.
 4. Choose **Import into my account**. Import assigns ownership on the server and commits all records in one database transaction. Repeating an import skips existing IDs; existing books and their incoming notes are skipped together rather than merged or overwritten.

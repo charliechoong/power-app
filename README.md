@@ -1,6 +1,6 @@
 # Commonplace — a personal hub
 
-A modular Next.js monolith with independent Reflections, Reading, Gratitude, and Plans domains. Finance and other future modules are not implemented.
+A modular Next.js monolith with independent Reflections, Reading, Gratitude, Plans, and Subscriptions domains. Finance and other future modules are not implemented.
 
 ## Run locally
 
@@ -66,7 +66,14 @@ Webpack is explicitly selected for development and production builds because Tur
 - Filter by status, search, edit, reopen, or delete. Plans are included in complete backups, cloud import, and verification.
 - Reading remains the place for book notes and detailed reading progress; Plans does not duplicate those records or depend on the Reading domain.
 
-There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all four domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Images are included in ZIP backups alongside the version 1 JSON manifest; old JSON backups still import. Backups are unencrypted private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
+### Subscriptions (inside Plans)
+
+- Add a service by name, with optional price, currency, next renewal date, management link, and notes. Choose weekly, monthly, or yearly billing.
+- Track active, paused, and canceled subscriptions. Active subscriptions appear first, ordered by renewal date; canceled records remain available under their filter.
+- Status changes are records in this app only. They do not change billing with the provider or send renewal reminders.
+- Subscriptions use a separate domain and storage table, and are included in complete backups and verification.
+
+There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all five domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Images are included in ZIP backups alongside the version 1 JSON manifest; old JSON backups still import. Backups are unencrypted private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
 
 ## Architecture
 
@@ -98,6 +105,8 @@ src/
       server-repository.ts   Books and notes stored in independent tables
       client-repository.ts   Local/cloud adapter selection
       components/            Book capture, cards, workspace, domain styles
+    plans/                    One-time goals and progress tracking
+    subscriptions/            Recurring services, costs and renewal dates
 ```
 
 The root layout and routes are server components. The shared shell uses a client component to highlight the active route. Interactive feature workspaces are client components. Browser storage is accessed after hydration or from user events, not during server rendering.
@@ -114,7 +123,7 @@ Reading owns its own model and repository, with local records under `personal-hu
 
 **Local mode:** entries remain in localStorage and optional images in IndexedDB on this browser and origin. Anyone with access to this browser profile can read them. Clearing site data or changing hostname, scheme, or port makes the collection unavailable. Keep a complete JSON or ZIP backup before changing storage mode.
 
-**Cloud mode:** Everyone can read published reflections and quotes, attached images, books and notes, and gratitude entries with their images without signing in. Images live in public Supabase Storage buckets; anyone with an image URL can read it. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL and Storage policies independently check the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
+**Cloud mode:** Everyone can read published reflections and quotes, attached images, books and notes, plans, subscriptions, and gratitude entries with their images without signing in. Images live in public Supabase Storage buckets; anyone with an image URL can read it. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL and Storage policies independently check the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
 
 Vercel always forces cloud mode and fails closed if credentials are missing. Other hosts must explicitly set `APP_STORAGE_MODE=cloud`. Do not publish the local development server. Keep database administration and auth-user creation outside the public app. `noindex` is included, but it is not access control.
 
@@ -122,6 +131,6 @@ The server uses Supabase's HTTPS Data API, so there are no direct database conne
 
 ## Verification
 
-Unit tests cover both domains: input validation, page bounds and completion rules, stable edit identity, search, independent client writes, deletion, corrupt records, storage failures, and isolation between Reading and Reflections. Playwright tests exercise capture, progress updates, completion with and without page totals, navigation, reload persistence, deletion, backup download, failure recovery, and cross-tab updates on desktop and mobile Chromium profiles.
+Unit tests cover the domains: input validation, page bounds and completion rules, stable edit identity, search, independent client writes, deletion, corrupt records, storage failures, and isolation between Reading and Reflections. Playwright tests exercise capture, progress updates, completion with and without page totals, navigation, reload persistence, deletion, backup download, failure recovery, and cross-tab updates on desktop and mobile Chromium profiles.
 
 Additional tests execute the actual migrations in PGlite PostgreSQL to check public reads, anonymous/outsider write denial, owner isolation, import rollback, idempotence, and cascading note deletion. Transfer tests cover corrupt and conflicting backups, legacy books, and exact verification.

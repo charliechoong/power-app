@@ -2,6 +2,10 @@ import { parseEntry, type Entry } from "@/features/reflections/model";
 import { parseBook, type Book } from "@/features/reading/model";
 import { parsePlan, type Plan } from "@/features/plans/model";
 import {
+  parseSubscription,
+  type Subscription,
+} from "@/features/subscriptions/model";
+import {
   parseGratitude,
   type GratitudeEntry,
 } from "@/features/gratitude/model";
@@ -10,12 +14,14 @@ export const REFLECTIONS_PREFIX = "personal-hub:reflections:v1:";
 export const READING_PREFIX = "personal-hub:reading:v1:";
 export const GRATITUDE_PREFIX = "personal-hub:gratitude:v1:";
 export const PLANS_PREFIX = "personal-hub:plans:v1:";
+export const SUBSCRIPTIONS_PREFIX = "personal-hub:subscriptions:v1:";
 export const MAX_BACKUP_BYTES = 3_000_000;
 export type ImportData = {
   entries: Entry[];
   books: Book[];
   gratitudes: GratitudeEntry[];
   plans: Plan[];
+  subscriptions: Subscription[];
 };
 export type ImportCounts = {
   entriesAdded: number;
@@ -28,6 +34,8 @@ export type ImportCounts = {
   gratitudesSkipped: number;
   plansAdded: number;
   plansSkipped: number;
+  subscriptionsAdded: number;
+  subscriptionsSkipped: number;
 };
 export type Backup = {
   version: 1;
@@ -87,6 +95,15 @@ function normalizedPlan(value: unknown) {
     updatedAt: new Date(plan.updatedAt).toISOString(),
   };
 }
+function normalizedSubscription(value: unknown) {
+  const item = parseSubscription(value);
+  idCheck(item.id);
+  return {
+    ...item,
+    createdAt: new Date(item.createdAt).toISOString(),
+    updatedAt: new Date(item.updatedAt).toISOString(),
+  };
+}
 
 // Cross-domain import is application composition; neither domain imports the other.
 export function parseBackups(backups: unknown): ImportData {
@@ -96,6 +113,7 @@ export function parseBackups(backups: unknown): ImportData {
   const books = new Map<string, Book>();
   const gratitudes = new Map<string, GratitudeEntry>();
   const plans = new Map<string, Plan>();
+  const subscriptions = new Map<string, Subscription>();
   let count = 0;
   for (const input of backups) {
     if (!input || typeof input !== "object")
@@ -160,6 +178,16 @@ export function parseBackups(backups: unknown): ImportData {
             "Conflicting versions of the same plan. Select only the backup you want to import.",
           );
         plans.set(plan.id, plan);
+      } else if (key.startsWith(SUBSCRIPTIONS_PREFIX)) {
+        const item = normalizedSubscription(value);
+        if (key !== SUBSCRIPTIONS_PREFIX + item.id)
+          throw new Error("Subscription ID does not match its storage key.");
+        const old = subscriptions.get(item.id);
+        if (old && JSON.stringify(old) !== JSON.stringify(item))
+          throw new Error(
+            "Conflicting versions of the same subscription. Select only the backup you want to import.",
+          );
+        subscriptions.set(item.id, item);
       } else
         throw new Error(
           "This file includes unrecognized records. Nothing has been imported.",
@@ -171,6 +199,7 @@ export function parseBackups(backups: unknown): ImportData {
     books: [...books.values()],
     gratitudes: [...gratitudes.values()],
     plans: [...plans.values()],
+    subscriptions: [...subscriptions.values()],
   };
 }
 
@@ -195,6 +224,10 @@ export function makeBackup(data: ImportData): Backup {
         PLANS_PREFIX + plan.id,
         JSON.stringify(plan),
       ]),
+      ...data.subscriptions.map((item) => [
+        SUBSCRIPTIONS_PREFIX + item.id,
+        JSON.stringify(item),
+      ]),
     ]),
   };
 }
@@ -212,12 +245,16 @@ export function verifyImport(expected: ImportData, actual: ImportData) {
   const plans = new Map(
     actual.plans.map((plan) => [plan.id, normalizedPlan(plan)]),
   );
+  const subscriptions = new Map(
+    actual.subscriptions.map((item) => [item.id, normalizedSubscription(item)]),
+  );
   const differences: { module: string; id: string }[] = [];
   let matchedEntries = 0;
   let matchedBooks = 0;
   let matchedNotes = 0;
   let matchedGratitudes = 0;
   let matchedPlans = 0;
+  let matchedSubscriptions = 0;
   for (const entry of expected.entries) {
     if (
       JSON.stringify(normalizedEntry(entry)) ===
@@ -251,12 +288,21 @@ export function verifyImport(expected: ImportData, actual: ImportData) {
       matchedPlans++;
     else differences.push({ module: "Plans", id: plan.id });
   }
+  for (const item of expected.subscriptions) {
+    if (
+      JSON.stringify(normalizedSubscription(item)) ===
+      JSON.stringify(subscriptions.get(item.id))
+    )
+      matchedSubscriptions++;
+    else differences.push({ module: "Subscriptions", id: item.id });
+  }
   return {
     matchedEntries,
     matchedBooks,
     matchedNotes,
     matchedGratitudes,
     matchedPlans,
+    matchedSubscriptions,
     differences,
   };
 }

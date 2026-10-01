@@ -61,6 +61,21 @@ const payload = {
       updatedAt: date,
     },
   ],
+  subscriptions: [
+    {
+      id: "s1",
+      name: "GPT Pro",
+      amount: 200,
+      currency: "USD",
+      billingCycle: "monthly",
+      nextRenewal: "2026-11-01",
+      status: "active",
+      url: "",
+      notes: "",
+      createdAt: date,
+      updatedAt: date,
+    },
+  ],
 };
 
 test("cloud schema preserves owner writes and opens content for public reading", async () => {
@@ -116,6 +131,15 @@ test("cloud schema preserves owner writes and opens content for public reading",
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261001091248_subscriptions.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     assert.equal(
       (
         await db.query<{ title: string }>(
@@ -127,9 +151,20 @@ test("cloud schema preserves owner writes and opens content for public reading",
     await db.query("insert into app_private.owners values ($1)", [owner]);
     await db.exec("set role anon");
     assert.deepEqual((await db.query("select * from public.plans")).rows, []);
+    assert.deepEqual(
+      (await db.query("select * from public.subscriptions")).rows,
+      [],
+    );
     await assert.rejects(
       db.query(
         "insert into public.plans(owner_id,id,title,kind,status) values ($1,'bad','Bad','task','planned')",
+        [owner],
+      ),
+      /permission denied/,
+    );
+    await assert.rejects(
+      db.query(
+        "insert into public.subscriptions(owner_id,id,name,billing_cycle,status) values ($1,'bad','Bad','monthly','active')",
         [owner],
       ),
       /permission denied/,
@@ -165,6 +200,13 @@ test("cloud schema preserves owner writes and opens content for public reading",
       ),
       /row-level security/,
     );
+    await assert.rejects(
+      db.query(
+        "insert into public.subscriptions(owner_id,id,name,billing_cycle,status) values ($1,'outsider','Outsider','monthly','active')",
+        [stranger],
+      ),
+      /row-level security/,
+    );
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       owner,
     ]);
@@ -190,6 +232,8 @@ test("cloud schema preserves owner writes and opens content for public reading",
       gratitudesSkipped: 0,
       plansAdded: 1,
       plansSkipped: 0,
+      subscriptionsAdded: 1,
+      subscriptionsSkipped: 0,
     };
     assert.deepEqual(await runImport(payload, true), added);
     assert.equal(
@@ -199,6 +243,11 @@ test("cloud schema preserves owner writes and opens content for public reading",
     assert.deepEqual(await runImport(payload, false), added);
     assert.equal(
       (await db.query("select * from public.plans where id='p1'")).rows.length,
+      1,
+    );
+    assert.equal(
+      (await db.query("select * from public.subscriptions where id='s1'")).rows
+        .length,
       1,
     );
     assert.equal(
@@ -243,6 +292,8 @@ test("cloud schema preserves owner writes and opens content for public reading",
       gratitudesSkipped: 1,
       plansAdded: 0,
       plansSkipped: 1,
+      subscriptionsAdded: 0,
+      subscriptionsSkipped: 1,
     });
     assert.equal(
       (

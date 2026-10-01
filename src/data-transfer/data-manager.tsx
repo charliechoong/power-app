@@ -16,6 +16,7 @@ import {
   READING_PREFIX,
   GRATITUDE_PREFIX,
   PLANS_PREFIX,
+  SUBSCRIPTIONS_PREFIX,
   parseBackups,
   type Backup,
   type ImportCounts,
@@ -32,7 +33,8 @@ function localBackup(): Backup {
       (key.startsWith(REFLECTIONS_PREFIX) ||
         key.startsWith(READING_PREFIX) ||
         key.startsWith(GRATITUDE_PREFIX) ||
-        key.startsWith(PLANS_PREFIX))
+        key.startsWith(PLANS_PREFIX) ||
+        key.startsWith(SUBSCRIPTIONS_PREFIX))
     )
       records[key] = localStorage.getItem(key) ?? "";
   }
@@ -83,7 +85,7 @@ export function DataManager() {
     setBackups(backups);
     setImages(imageMap);
     setSummary(
-      `${data.entries.length} reflections/quotes, ${imageMap.size} images, ${data.books.length} books, ${data.books.reduce((n, b) => n + b.notes.length, 0)} notes, ${data.gratitudes.length} gratitude entries, ${data.plans.length} plans.`,
+      `${data.entries.length} reflections/quotes, ${imageMap.size} images, ${data.books.length} books, ${data.books.reduce((n, b) => n + b.notes.length, 0)} notes, ${data.gratitudes.length} gratitude entries, ${data.plans.length} plans, ${data.subscriptions.length} subscriptions.`,
     );
   }
   async function run(operation: () => Promise<void>) {
@@ -114,9 +116,9 @@ export function DataManager() {
       <section className="data-panel">
         <h2>Keep a backup</h2>
         <p>
-          Download reflections, books, progress, book notes, plans, gratitude
-          entries, and their images together. This file contains private data.
-          Backups with images download as ZIP files.
+          Download reflections, books, progress, book notes, plans,
+          subscriptions, gratitude entries, and their images together. This file
+          contains private data. Backups with images download as ZIP files.
         </p>
         <button
           className="button primary"
@@ -355,7 +357,9 @@ export function DataManager() {
               {verification.matchedEntries} reflections/quotes,{" "}
               {verification.matchedBooks} books, and {verification.matchedNotes}{" "}
               notes, {verification.matchedGratitudes} gratitude entries, and{" "}
-              {verification.matchedPlans} plans match the backup.
+              {verification.matchedPlans} plans, and{" "}
+              {verification.matchedSubscriptions} subscriptions match the
+              backup.
             </p>
             {verification.differences.length ? (
               <>
@@ -397,13 +401,14 @@ function Counts({ counts }: { counts: ImportCounts }) {
       <p>
         Add: {counts.entriesAdded} reflections/quotes, {counts.booksAdded}{" "}
         books, {counts.notesAdded} notes, {counts.gratitudesAdded} gratitude
-        entries, {counts.plansAdded} plans.
+        entries, {counts.plansAdded} plans, {counts.subscriptionsAdded}{" "}
+        subscriptions.
       </p>
       <p>
         Skip existing: {counts.entriesSkipped} reflections/quotes,{" "}
         {counts.booksSkipped} books, {counts.notesSkipped} notes,{" "}
         {counts.gratitudesSkipped} gratitude entries, {counts.plansSkipped}{" "}
-        plans.
+        plans, {counts.subscriptionsSkipped} subscriptions.
       </p>
     </>
   );
