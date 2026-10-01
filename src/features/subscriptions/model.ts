@@ -119,10 +119,10 @@ export function sortSubscriptions(items: Subscription[]) {
   };
   return [...items].sort(
     (a, b) =>
-      rank[a.status] - rank[b.status] ||
       (a.nextRenewal ?? "9999-12-31").localeCompare(
         b.nextRenewal ?? "9999-12-31",
       ) ||
+      rank[a.status] - rank[b.status] ||
       Date.parse(b.createdAt) - Date.parse(a.createdAt),
   );
 }

@@ -150,8 +150,8 @@ export function SubscriptionsWorkspace() {
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   const activeCount = items.filter((item) => item.status === "active").length;
-  const visible = items.filter(
-    (item) => filter === "all" || item.status === filter,
+  const visible = sortSubscriptions(
+    items.filter((item) => filter === "all" || item.status === filter),
   );
 
   return (
@@ -376,7 +376,10 @@ export function SubscriptionsWorkspace() {
         {message}
       </p>
       <div className="subscriptions-list-head">
-        <h3>Your subscriptions</h3>
+        <div>
+          <h3>Your subscriptions</h3>
+          <p>Earliest renewal first</p>
+        </div>
         <div
           className="subscriptions-filters"
           role="group"
@@ -423,17 +426,6 @@ export function SubscriptionsWorkspace() {
                 "Renewal date not set"
               )}
             </p>
-            {item.notes && <p className="subscription-notes">{item.notes}</p>}
-            {item.url && (
-              <a
-                className="subscription-link"
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Manage with provider <Icon name="arrow" size={14} />
-              </a>
-            )}
             {canEdit && (
               <div className="subscription-actions">
                 {item.status === "active" && (
@@ -493,6 +485,23 @@ export function SubscriptionsWorkspace() {
                 >
                   <Icon name="trash" size={16} />
                 </button>
+              </div>
+            )}
+            {(item.notes || item.url) && (
+              <div className="subscription-details">
+                {item.notes && (
+                  <p className="subscription-notes">{item.notes}</p>
+                )}
+                {item.url && (
+                  <a
+                    className="subscription-link"
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Manage with provider <Icon name="arrow" size={14} />
+                  </a>
+                )}
               </div>
             )}
           </article>

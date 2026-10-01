@@ -86,3 +86,27 @@ test("subscriptions persist and round-trip through complete backups", async () =
   await repository.remove(first.id);
   assert.deepEqual(await repository.list(), []);
 });
+
+test("subscriptions sort by renewal date before status, with undated items last", () => {
+  const item = {
+    ...input,
+    id: "base",
+    createdAt: "2026-10-01T00:00:00.000Z",
+    updatedAt: "2026-10-01T00:00:00.000Z",
+  };
+  const ordered = sortSubscriptions([
+    { ...item, id: "later-active", nextRenewal: "2026-12-01" },
+    { ...item, id: "undated", nextRenewal: null },
+    {
+      ...item,
+      id: "earlier-paused",
+      status: "paused",
+      nextRenewal: "2026-10-15",
+    },
+    { ...item, id: "earlier-active", nextRenewal: "2026-10-15" },
+  ]);
+  assert.deepEqual(
+    ordered.map((subscription) => subscription.id),
+    ["earlier-active", "earlier-paused", "later-active", "undated"],
+  );
+});
