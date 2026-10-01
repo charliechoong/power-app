@@ -132,6 +132,90 @@
   font-size: 11px;
 }
 
+.mindfulness-quote {
+  position: relative;
+  overflow: hidden;
+  margin-top: 18px;
+  padding: 30px 38px;
+  border: 1px solid #dbe6e1;
+  border-radius: 15px;
+  background: linear-gradient(120deg, #f3f8f5 0%, #edf4f0 60%, #f7f7f1 100%);
+}
+
+.mindfulness-quote::after {
+  content: "";
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  right: -66px;
+  top: -86px;
+  border: 1px solid #d4e2d9;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 28px #d8e8dc66,
+    0 0 0 58px #d8e8dc33;
+  pointer-events: none;
+}
+
+.mindfulness-quote-heading {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.mindfulness-symbol {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: #dbeae0;
+}
+
+.mindfulness-symbol span {
+  width: 17px;
+  height: 17px;
+  border: 2px solid #5b8068;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 5px #dbeae0,
+    0 0 0 6px #7fa18a;
+}
+
+.mindfulness-quote-heading .eyebrow {
+  margin: 0 0 4px;
+  color: #4c745e;
+}
+
+.mindfulness-quote-heading p:last-child {
+  margin: 0;
+  color: #74877a;
+  font-size: 12px;
+}
+
+.mindfulness-quote blockquote {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 24px 0 20px;
+  color: #365545;
+  font:
+    400 clamp(23px, 3vw, 32px) / 1.35 Georgia,
+    serif;
+  letter-spacing: -0.4px;
+}
+
+.mindfulness-quote-footline {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #7c9180;
+  font-size: 11px;
+}
+
 .home-collections {
   margin-top: 61px;
 }
@@ -256,6 +340,9 @@
   .daily-reflection-prompt {
     margin-bottom: 34px;
     padding: 18px 19px;
+  }
+  .mindfulness-quote {
+    padding: 25px 22px;
   }
   .home-collections {
     margin-top: 48px;

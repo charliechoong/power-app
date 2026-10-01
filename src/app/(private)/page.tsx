@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { getDailyQuote } from "@/features/home/daily-quote";
+import { getMindfulnessQuote } from "@/features/home/mindfulness-quote";
 import { DailyQuoteRefresh } from "@/features/home/daily-quote-refresh";
 import "@/features/home/home.css";
 
@@ -39,7 +40,9 @@ const sections = [
 ];
 
 export default function HomePage() {
-  const quote = getDailyQuote(new Date());
+  const now = new Date();
+  const quote = getDailyQuote(now);
+  const mindfulnessQuote = getMindfulnessQuote(now);
 
   return (
     <div className="home-page">
@@ -70,6 +73,27 @@ export default function HomePage() {
           <span>Original words for the day ahead</span>
           <span>Changes daily · Singapore time</span>
         </div>
+      </section>
+
+      <section
+        className="mindfulness-quote"
+        aria-labelledby="mindfulness-quote-heading"
+      >
+        <div className="mindfulness-quote-heading">
+          <span className="mindfulness-symbol" aria-hidden="true">
+            <span />
+          </span>
+          <div>
+            <p className="eyebrow" id="mindfulness-quote-heading">
+              MINDFULNESS FOR TODAY
+            </p>
+            <p>A moment to arrive where you are.</p>
+          </div>
+        </div>
+        <blockquote>{mindfulnessQuote}</blockquote>
+        <p className="mindfulness-quote-footline">
+          Original words · Changes daily in Singapore time
+        </p>
       </section>
 
       <section

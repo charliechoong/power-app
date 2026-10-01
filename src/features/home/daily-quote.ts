@@ -280,7 +280,7 @@ export const DAILY_QUOTE_COUNT = THEMES.reduce(
 const DAY_MS = 86_400_000;
 const TIME_ZONE = "Asia/Singapore";
 
-export function getDailyQuote(now: Date) {
+export function singaporeDayNumber(now: Date) {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: TIME_ZONE,
     year: "numeric",
@@ -289,9 +289,13 @@ export function getDailyQuote(now: Date) {
   }).formatToParts(now);
   const value = (type: string) =>
     Number(parts.find((part) => part.type === type)?.value);
-  const dayNumber = Math.floor(
+  return Math.floor(
     Date.UTC(value("year"), value("month") - 1, value("day")) / DAY_MS,
   );
+}
+
+export function getDailyQuote(now: Date) {
+  const dayNumber = singaporeDayNumber(now);
   const index =
     ((dayNumber % DAILY_QUOTE_COUNT) + DAILY_QUOTE_COUNT) % DAILY_QUOTE_COUNT;
   const theme = THEMES[index % THEMES.length];

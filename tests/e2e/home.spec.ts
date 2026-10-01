@@ -10,6 +10,8 @@ test("homepage shows today's quote and links to every current section", async ({
   await expect(page.getByText("TODAY'S QUOTE")).toBeVisible();
   await expect(page.locator(".daily-quote blockquote")).not.toBeEmpty();
   await expect(page.getByLabel("Reflection prompt")).toContainText("?");
+  await expect(page.getByText("MINDFULNESS FOR TODAY")).toBeVisible();
+  await expect(page.locator(".mindfulness-quote blockquote")).not.toBeEmpty();
   await expect(
     page.getByRole("link", { name: /Explore reflections/ }),
   ).toHaveAttribute("href", "/reflections");

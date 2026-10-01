@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The homepage features one of 180 original quotes and a related reflection question, plus links to Reflections, Reading (`/reading`), Gratitude (`/gratitude`), and Plans (`/plans`). The quote and prompt change together at midnight Singapore time. The quote rotation repeats after 180 days and does not rely on an external service.
+Open http://localhost:3000. The homepage features a daily quote with a related reflection question, plus a separate daily mindfulness quote. Each draws from its own set of 180 original lines, changes at midnight Singapore time, and repeats after 180 days without an external service. The homepage also links to Reflections, Reading (`/reading`), Gratitude (`/gratitude`), and Plans (`/plans`).
 
 ```sh
 npm run lint
@@ -33,7 +33,7 @@ Webpack is explicitly selected for development and production builds because Tur
 
 ## MVP
 
-- A homepage with a daily quote, reflection prompt, and entry points to the current sections.
+- A homepage with two daily quotes (general and mindfulness), a reflection prompt, and entry points to the current sections.
 - Text-first capture, with reflection/quote toggle and optional quote attribution.
 - Save with one button or Command/Ctrl + Enter; no title or categorization required.
 - Search content and attribution; filter by entry type.
