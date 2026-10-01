@@ -208,9 +208,19 @@
   background: #f3eee4;
   color: #8b7251;
 }
+.subscription-status.status-ending {
+  background: #fff0df;
+  color: #9a693d;
+}
 .subscription-status.status-canceled {
   background: #edf0ed;
   color: #788579;
+}
+.subscription-status-help {
+  color: #758275;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 .subscription-price {
   font-size: 13px;

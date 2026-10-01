@@ -28,6 +28,20 @@ test("add and track a subscription under Plans", async ({ page }) => {
     .getByRole("group", { name: "Filter subscriptions" })
     .getByRole("button", { name: "Active" })
     .click();
+  await card.getByRole("button", { name: "Mark ending" }).click();
+  await expect(card).toContainText("Ending");
+  await expect(card).toContainText("Access ends: 1 Nov 2026");
+  await section
+    .getByRole("group", { name: "Filter subscriptions" })
+    .getByRole("button", { name: "Ending" })
+    .click();
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Mark active" }).click();
+  await expect(card).toHaveCount(0);
+  await section
+    .getByRole("group", { name: "Filter subscriptions" })
+    .getByRole("button", { name: "Active" })
+    .click();
   await card.getByRole("button", { name: "Edit GPT Pro" }).click();
   await section.getByLabel("Billing cycle").selectOption("yearly");
   await section.getByRole("button", { name: "Save changes" }).click();

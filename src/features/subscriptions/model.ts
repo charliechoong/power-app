@@ -5,10 +5,16 @@ export const CYCLE_LABELS: Record<BillingCycle, string> = {
   monthly: "Monthly",
   yearly: "Yearly",
 };
-export const SUBSCRIPTION_STATUSES = ["active", "paused", "canceled"] as const;
+export const SUBSCRIPTION_STATUSES = [
+  "active",
+  "ending",
+  "paused",
+  "canceled",
+] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 export const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   active: "Active",
+  ending: "Ending",
   paused: "Paused",
   canceled: "Canceled",
 };
@@ -66,6 +72,8 @@ export function validateSubscription(
     throw new Error("Enter a valid renewal date.");
   if (!SUBSCRIPTION_STATUSES.includes(input.status))
     throw new Error("Choose a valid status.");
+  if (input.status === "ending" && input.nextRenewal === null)
+    throw new Error("Set the date your access ends before marking it Ending.");
   if (typeof input.url !== "string" || input.url.length > 1000)
     throw new Error("Keep the link under 1,000 characters.");
   if (input.url.trim()) {
@@ -88,6 +96,29 @@ export function validateSubscription(
     url: input.url.trim(),
     notes: input.notes.trim(),
   };
+}
+
+export function singaporeDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Singapore",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const value = (type: string) =>
+    parts.find((part) => part.type === type)?.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
+export function currentSubscriptionStatus(
+  item: Pick<SubscriptionInput, "status" | "nextRenewal">,
+  today = singaporeDate(),
+): SubscriptionStatus {
+  return item.status === "ending" &&
+    item.nextRenewal !== null &&
+    item.nextRenewal < today
+    ? "canceled"
+    : item.status;
 }
 
 export function parseSubscription(value: unknown): Subscription {
@@ -114,8 +145,9 @@ export function parseSubscription(value: unknown): Subscription {
 export function sortSubscriptions(items: Subscription[]) {
   const rank: Record<SubscriptionStatus, number> = {
     active: 0,
-    paused: 1,
-    canceled: 2,
+    ending: 1,
+    paused: 2,
+    canceled: 3,
   };
   return [...items].sort(
     (a, b) =>

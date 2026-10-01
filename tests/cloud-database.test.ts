@@ -140,6 +140,15 @@ test("cloud schema preserves owner writes and opens content for public reading",
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261001112700_subscription_ending_status.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     assert.equal(
       (
         await db.query<{ title: string }>(
@@ -210,6 +219,17 @@ test("cloud schema preserves owner writes and opens content for public reading",
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       owner,
     ]);
+    await assert.rejects(
+      db.query(
+        "insert into public.subscriptions(owner_id,id,name,billing_cycle,status) values ($1,'ending-no-date','Ending','monthly','ending')",
+        [owner],
+      ),
+      /subscriptions_status_check/,
+    );
+    await db.query(
+      "insert into public.subscriptions(owner_id,id,name,billing_cycle,status,next_renewal) values ($1,'ending-with-date','Ending','monthly','ending','2026-11-01')",
+      [owner],
+    );
     await assert.rejects(
       db.query("select * from app_private.owners"),
       /permission denied/,

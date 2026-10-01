@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createSubscriptionsRepository } from "../src/features/subscriptions/local-repository";
 import {
+  currentSubscriptionStatus,
   formatPrice,
+  singaporeDate,
   sortSubscriptions,
   validateSubscription,
   type SubscriptionInput,
@@ -58,6 +60,34 @@ test("subscriptions validate price, cycle, date, status and links", () => {
   assert.throws(
     () => validateSubscription({ ...input, url: "javascript:alert(1)" }),
     /http or https/,
+  );
+  assert.throws(
+    () =>
+      validateSubscription({ ...input, status: "ending", nextRenewal: null }),
+    /date your access ends/,
+  );
+  assert.equal(
+    validateSubscription({ ...input, status: "ending" }).status,
+    "ending",
+  );
+});
+
+test("ending access stays active through its Singapore end date", () => {
+  const ending = {
+    ...input,
+    status: "ending" as const,
+    nextRenewal: "2026-11-01",
+  };
+  const beforeMidnight = new Date("2026-11-01T15:59:59.000Z");
+  const afterMidnight = new Date("2026-11-01T16:00:00.000Z");
+  assert.equal(singaporeDate(beforeMidnight), "2026-11-01");
+  assert.equal(
+    currentSubscriptionStatus(ending, singaporeDate(beforeMidnight)),
+    "ending",
+  );
+  assert.equal(
+    currentSubscriptionStatus(ending, singaporeDate(afterMidnight)),
+    "canceled",
   );
 });
 

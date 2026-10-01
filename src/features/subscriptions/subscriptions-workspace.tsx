@@ -11,7 +11,9 @@ import {
   CYCLE_LABELS,
   STATUS_LABELS,
   SUBSCRIPTION_STATUSES,
+  currentSubscriptionStatus,
   formatPrice,
+  singaporeDate,
   sortSubscriptions,
   validateSubscription,
   type Subscription,
@@ -53,6 +55,7 @@ export function SubscriptionsWorkspace() {
   const [draft, setDraft] = useState<SubscriptionInput>(blank);
   const [editing, setEditing] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
+  const [today, setToday] = useState(singaporeDate);
 
   useEffect(() => {
     let active = true;
@@ -96,6 +99,16 @@ export function SubscriptionsWorkspace() {
     };
   }, [repository, mode, retry]);
 
+  useEffect(() => {
+    const refreshDate = () => setToday(singaporeDate());
+    const timer = window.setInterval(refreshDate, 60_000);
+    window.addEventListener("focus", refreshDate);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDate);
+    };
+  }, []);
+
   async function run(action: () => Promise<void>) {
     if (busyRef.current || !ready || !canEdit) return;
     busyRef.current = true;
@@ -132,7 +145,10 @@ export function SubscriptionsWorkspace() {
     if (!existing) setFilter("active");
     setMessage(existing ? "Subscription updated." : "Subscription added.");
   }
-  function edit(item: Subscription) {
+  function edit(
+    item: Subscription,
+    status = currentSubscriptionStatus(item, today),
+  ) {
     setEditing(item.id);
     setDraft({
       name: item.name,
@@ -140,7 +156,7 @@ export function SubscriptionsWorkspace() {
       currency: item.currency,
       billingCycle: item.billingCycle,
       nextRenewal: item.nextRenewal,
-      status: item.status,
+      status,
       url: item.url,
       notes: item.notes,
     });
@@ -149,9 +165,18 @@ export function SubscriptionsWorkspace() {
       .getElementById("subscription-form-heading")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-  const activeCount = items.filter((item) => item.status === "active").length;
+  const activeCount = items.filter((item) =>
+    ["active", "ending"].includes(currentSubscriptionStatus(item, today)),
+  ).length;
   const visible = sortSubscriptions(
-    items.filter((item) => filter === "all" || item.status === filter),
+    items.filter((item) => {
+      const status = currentSubscriptionStatus(item, today);
+      return (
+        filter === "all" ||
+        status === filter ||
+        (filter === "active" && status === "ending")
+      );
+    }),
   );
 
   return (
@@ -171,9 +196,10 @@ export function SubscriptionsWorkspace() {
       </div>
       <p className="subscriptions-intro">
         Keep your paid tools in one place, with their price, billing cycle and
-        next renewal date. This list is publicly readable, like the rest of the
-        app. Changing a status here does not change your subscription with the
-        provider.
+        next renewal or access-end date. Ending means you can still use a
+        subscription but it will not renew. This list is publicly readable, like
+        the rest of the app. Changing a status here does not change your
+        subscription with the provider.
       </p>
 
       {canEdit && (
@@ -267,9 +293,12 @@ export function SubscriptionsWorkspace() {
                 </select>
               </label>
               <label>
-                Next renewal (optional)
+                {draft.status === "ending"
+                  ? "Access ends (required)"
+                  : "Next renewal (optional)"}
                 <input
                   type="date"
+                  required={draft.status === "ending"}
                   value={draft.nextRenewal ?? ""}
                   onChange={(event) =>
                     setDraft({
@@ -307,6 +336,12 @@ export function SubscriptionsWorkspace() {
                       </option>
                     ))}
                   </select>
+                  {draft.status === "ending" && (
+                    <span className="subscription-status-help">
+                      Access continues through the date above, then appears as
+                      Canceled. Update auto-renew with the provider separately.
+                    </span>
+                  )}
                 </label>
                 <label>
                   Manage subscription link (optional)
@@ -378,22 +413,24 @@ export function SubscriptionsWorkspace() {
       <div className="subscriptions-list-head">
         <div>
           <h3>Your subscriptions</h3>
-          <p>Earliest renewal first</p>
+          <p>Earliest date first</p>
         </div>
         <div
           className="subscriptions-filters"
           role="group"
           aria-label="Filter subscriptions"
         >
-          {(["active", "paused", "canceled", "all"] as const).map((status) => (
-            <button
-              key={status}
-              aria-pressed={filter === status}
-              onClick={() => setFilter(status)}
-            >
-              {status === "all" ? "All" : STATUS_LABELS[status]}
-            </button>
-          ))}
+          {(["active", "ending", "paused", "canceled", "all"] as const).map(
+            (status) => (
+              <button
+                key={status}
+                aria-pressed={filter === status}
+                onClick={() => setFilter(status)}
+              >
+                {status === "all" ? "All" : STATUS_LABELS[status]}
+              </button>
+            ),
+          )}
         </div>
       </div>
       {!ready && !error && (
@@ -407,105 +444,134 @@ export function SubscriptionsWorkspace() {
         </p>
       )}
       <div className="subscriptions-grid">
-        {visible.map((item) => (
-          <article className="subscription-card" key={item.id}>
-            <div className="subscription-card-top">
-              <h4>{item.name}</h4>
-              <span className={`subscription-status status-${item.status}`}>
-                {STATUS_LABELS[item.status]}
-              </span>
-            </div>
-            <p className="subscription-price">{formatPrice(item)}</p>
-            <p className="subscription-renewal">
-              {item.nextRenewal ? (
-                <>
-                  {item.status === "active" ? "Next renewal" : "Renewal date"}:{" "}
-                  <strong>{formatDate(item.nextRenewal)}</strong>
-                </>
-              ) : (
-                "Renewal date not set"
-              )}
-            </p>
-            {canEdit && (
-              <div className="subscription-actions">
-                {item.status === "active" && (
-                  <button
-                    disabled={busy}
-                    onClick={() =>
-                      void run(() => save({ ...item, status: "paused" }, item))
-                    }
-                  >
-                    Pause
-                  </button>
+        {visible.map((item) => {
+          const status = currentSubscriptionStatus(item, today);
+          return (
+            <article className="subscription-card" key={item.id}>
+              <div className="subscription-card-top">
+                <h4>{item.name}</h4>
+                <span className={`subscription-status status-${status}`}>
+                  {STATUS_LABELS[status]}
+                </span>
+              </div>
+              <p className="subscription-price">{formatPrice(item)}</p>
+              <p className="subscription-renewal">
+                {item.nextRenewal ? (
+                  <>
+                    {item.status === "ending"
+                      ? status === "ending"
+                        ? "Access ends"
+                        : "Access ended"
+                      : status === "active"
+                        ? "Next renewal"
+                        : "Renewal date"}
+                    : <strong>{formatDate(item.nextRenewal)}</strong>
+                  </>
+                ) : (
+                  "Renewal date not set"
                 )}
-                {item.status !== "active" && (
+              </p>
+              {canEdit && (
+                <div className="subscription-actions">
+                  {status === "active" && (
+                    <>
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void run(() =>
+                            save({ ...item, status: "paused" }, item),
+                          )
+                        }
+                      >
+                        Pause
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          item.nextRenewal && item.nextRenewal >= today
+                            ? void run(() =>
+                                save({ ...item, status: "ending" }, item),
+                              )
+                            : edit(item, "ending")
+                        }
+                      >
+                        Mark ending
+                      </button>
+                    </>
+                  )}
+                  {status !== "active" && (
+                    <button
+                      disabled={busy}
+                      onClick={() =>
+                        void run(() =>
+                          save({ ...item, status: "active" }, item),
+                        )
+                      }
+                    >
+                      Mark active
+                    </button>
+                  )}
+                  {status !== "canceled" && (
+                    <button
+                      disabled={busy}
+                      onClick={() =>
+                        void run(() =>
+                          save({ ...item, status: "canceled" }, item),
+                        )
+                      }
+                    >
+                      Mark canceled
+                    </button>
+                  )}
                   <button
+                    className="subscription-icon-action"
                     disabled={busy}
-                    onClick={() =>
-                      void run(() => save({ ...item, status: "active" }, item))
-                    }
+                    aria-label={`Edit ${item.name}`}
+                    onClick={() => edit(item)}
                   >
-                    Mark active
+                    <Icon name="edit" size={16} />
                   </button>
-                )}
-                {item.status !== "canceled" && (
                   <button
+                    className="subscription-icon-action"
                     disabled={busy}
-                    onClick={() =>
-                      void run(() =>
-                        save({ ...item, status: "canceled" }, item),
+                    aria-label={`Delete ${item.name}`}
+                    onClick={() => {
+                      if (
+                        window.confirm(`Delete “${item.name}” from your list?`)
                       )
-                    }
+                        void run(async () => {
+                          await repository.remove(item.id);
+                          setItems((previous) =>
+                            previous.filter((record) => record.id !== item.id),
+                          );
+                          setMessage("Subscription deleted.");
+                        });
+                    }}
                   >
-                    Mark canceled
+                    <Icon name="trash" size={16} />
                   </button>
-                )}
-                <button
-                  className="subscription-icon-action"
-                  disabled={busy}
-                  aria-label={`Edit ${item.name}`}
-                  onClick={() => edit(item)}
-                >
-                  <Icon name="edit" size={16} />
-                </button>
-                <button
-                  className="subscription-icon-action"
-                  disabled={busy}
-                  aria-label={`Delete ${item.name}`}
-                  onClick={() => {
-                    if (window.confirm(`Delete “${item.name}” from your list?`))
-                      void run(async () => {
-                        await repository.remove(item.id);
-                        setItems((previous) =>
-                          previous.filter((record) => record.id !== item.id),
-                        );
-                        setMessage("Subscription deleted.");
-                      });
-                  }}
-                >
-                  <Icon name="trash" size={16} />
-                </button>
-              </div>
-            )}
-            {(item.notes || item.url) && (
-              <div className="subscription-details">
-                {item.notes && (
-                  <p className="subscription-notes">{item.notes}</p>
-                )}
-                {item.url && (
-                  <a
-                    className="subscription-link"
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Manage with provider <Icon name="arrow" size={14} />
-                  </a>
-                )}
-              </div>
-            )}
-          </article>
-        ))}
+                </div>
+              )}
+              {(item.notes || item.url) && (
+                <div className="subscription-details">
+                  {item.notes && (
+                    <p className="subscription-notes">{item.notes}</p>
+                  )}
+                  {item.url && (
+                    <a
+                      className="subscription-link"
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Manage with provider <Icon name="arrow" size={14} />
+                    </a>
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
     </section>
   );
