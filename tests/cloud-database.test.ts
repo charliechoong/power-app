@@ -261,10 +261,27 @@ test("cloud schema preserves owner writes and opens content for public reading",
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261001072817_gratitude_images.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     assert.equal(
       (
         await db.query<{ public: boolean }>(
           "select public from storage.buckets where id='reflection-images'",
+        )
+      ).rows[0].public,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query<{ public: boolean }>(
+          "select public from storage.buckets where id='gratitude-images'",
         )
       ).rows[0].public,
       true,
@@ -280,6 +297,13 @@ test("cloud schema preserves owner writes and opens content for public reading",
       ),
       /row-level security/,
     );
+    await assert.rejects(
+      db.query(
+        "insert into storage.objects(id,bucket_id,name) values ('bad-gratitude','gratitude-images',$1)",
+        [`${owner}/bad.webp`],
+      ),
+      /row-level security/,
+    );
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       owner,
     ]);
@@ -287,9 +311,13 @@ test("cloud schema preserves owner writes and opens content for public reading",
       "insert into storage.objects(id,bucket_id,name) values ('good','reflection-images',$1)",
       [`${owner}/good.webp`],
     );
+    await db.query(
+      "insert into storage.objects(id,bucket_id,name) values ('good-gratitude','gratitude-images',$1)",
+      [`${owner}/good.webp`],
+    );
     assert.equal(
       (await db.query("select * from storage.objects")).rows.length,
-      1,
+      2,
     );
     await db.exec("reset role");
     await db.exec(

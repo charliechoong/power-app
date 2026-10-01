@@ -4,9 +4,19 @@ import "./gratitude.css";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icon";
+import {
+  ImageAttachmentField,
+  ImageDisplay,
+} from "@/components/image-attachment";
 import { useStorageMode } from "@/lib/storage-mode";
 import { useCanEdit } from "@/lib/edit-access";
-import { useGratitudeRepository } from "../client-repository";
+import {
+  useGratitudeRepository,
+  saveGratitudeImage,
+  removeGratitudeImage,
+} from "../client-repository";
+import { getLocalGratitudeImage } from "../image-storage";
+import { prepareImage } from "@/lib/prepare-image";
 import { GRATITUDE_STORAGE_PREFIX } from "../local-repository";
 import {
   GRATITUDE_CONTENT_LIMIT,
@@ -37,6 +47,9 @@ export function GratitudeWorkspace() {
   const [ready, setReady] = useState(false);
   const [content, setContent] = useState("");
   const [title, setTitle] = useState("");
+  const [imageCaption, setImageCaption] = useState("");
+  const [imageFile, setImageFile] = useState<File>();
+  const [removeImage, setRemoveImage] = useState(false);
   const [editing, setEditing] = useState<GratitudeEntry>();
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -105,6 +118,15 @@ export function GratitudeWorkspace() {
     });
   }
 
+  function resetComposer() {
+    setContent("");
+    setTitle("");
+    setImageCaption("");
+    setImageFile(undefined);
+    setRemoveImage(false);
+    setEditing(undefined);
+  }
+
   async function save() {
     if (!canEdit || busyRef.current || !ready) return;
     busyRef.current = true;
@@ -112,7 +134,34 @@ export function GratitudeWorkspace() {
     setError("");
     setStatus("");
     try {
-      const entry = await repository.save({ title, content }, editing);
+      let entry = await repository.save(
+        {
+          title,
+          content,
+          imageCaption:
+            removeImage || (!imageFile && !editing?.imagePath)
+              ? ""
+              : imageCaption,
+        },
+        editing,
+      );
+      try {
+        if (imageFile)
+          entry = await saveGratitudeImage(
+            mode,
+            entry,
+            await prepareImage(imageFile),
+          );
+        else if (removeImage && entry.imagePath)
+          entry = await removeGratitudeImage(mode, entry);
+      } catch (reason) {
+        setEditing(entry);
+        setEntries((previous) => [
+          ...previous.filter((item) => item.id !== entry.id),
+          entry,
+        ]);
+        throw reason;
+      }
       setEntries((previous) =>
         [...previous.filter((item) => item.id !== entry.id), entry].sort(
           (a, b) =>
@@ -120,9 +169,7 @@ export function GratitudeWorkspace() {
             a.id.localeCompare(b.id),
         ),
       );
-      setContent("");
-      setTitle("");
-      setEditing(undefined);
+      resetComposer();
       setStatus("Saved to your gratitude collection.");
       textarea.current?.focus();
     } catch (reason) {
@@ -130,7 +177,7 @@ export function GratitudeWorkspace() {
         reason instanceof Error &&
           /10,000|200 characters|experience/.test(reason.message)
           ? reason.message
-          : "Could not save this entry. Your words are still here; please try again.",
+          : `Could not save this entry or image. ${reason instanceof Error ? reason.message : "Your words are still here; please try again."}`,
       );
     } finally {
       busyRef.current = false;
@@ -147,9 +194,7 @@ export function GratitudeWorkspace() {
       await repository.remove(id);
       setEntries((previous) => previous.filter((entry) => entry.id !== id));
       if (editing?.id === id) {
-        setEditing(undefined);
-        setContent("");
-        setTitle("");
+        resetComposer();
       }
       setPendingDelete(undefined);
       setStatus("Entry deleted.");
@@ -170,6 +215,9 @@ export function GratitudeWorkspace() {
     setEditing(entry);
     setContent(entry.content);
     setTitle(entry.title);
+    setImageCaption(entry.imageCaption ?? "");
+    setImageFile(undefined);
+    setRemoveImage(false);
     setError("");
     setStatus("");
     focusComposer();
@@ -278,15 +326,31 @@ export function GratitudeWorkspace() {
                 </p>
               </div>
             )}
+            <div className="gratitude-image-field">
+              <ImageAttachmentField
+                id="gratitude-image"
+                file={imageFile}
+                onFileChange={setImageFile}
+                hasExisting={!!editing?.imagePath}
+                removed={removeImage}
+                onRemoveChange={setRemoveImage}
+                caption={imageCaption}
+                onCaptionChange={setImageCaption}
+                disabled={busy}
+                existingImage={
+                  editing?.imagePath && (
+                    <GratitudeImage entry={editing} mode={mode} compact />
+                  )
+                }
+              />
+            </div>
             <div className="gratitude-composer-foot">
               {editing && (
                 <button
                   type="button"
                   className="text-button"
                   onClick={() => {
-                    setEditing(undefined);
-                    setContent("");
-                    setTitle("");
+                    resetComposer();
                   }}
                 >
                   Cancel edit
@@ -369,6 +433,9 @@ export function GratitudeWorkspace() {
                 <p>
                   <FormattedExperience content={entry.content} />
                 </p>
+                {entry.imagePath && (
+                  <GratitudeImage entry={entry} mode={mode} />
+                )}
                 {canEdit && (
                   <div className="gratitude-card-actions">
                     <button
@@ -416,5 +483,29 @@ export function GratitudeWorkspace() {
         )}
       </section>
     </div>
+  );
+}
+
+function GratitudeImage({
+  entry,
+  mode,
+  compact = false,
+}: {
+  entry: GratitudeEntry;
+  mode: "local" | "cloud";
+  compact?: boolean;
+}) {
+  return (
+    <ImageDisplay
+      id={entry.id}
+      caption={entry.imageCaption}
+      compact={compact}
+      cloudUrl={
+        mode === "cloud"
+          ? `/api/gratitude/${encodeURIComponent(entry.id)}/image?v=${encodeURIComponent(entry.imagePath ?? "")}`
+          : undefined
+      }
+      loadLocal={mode === "local" ? getLocalGratitudeImage : undefined}
+    />
   );
 }

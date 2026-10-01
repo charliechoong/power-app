@@ -113,6 +113,7 @@ test("reflection image and caption survive reload and are included in backup", a
     mimeType: "image/png",
     buffer: Buffer.from(png, "base64"),
   });
+  await expect(page.getByAltText("Selected image preview")).toBeVisible();
   await page.getByLabel("Caption").fill("A small moment");
   await page.getByRole("button", { name: "Save thought", exact: true }).click();
   await expect(page.locator("article img")).toBeVisible();
@@ -132,7 +133,8 @@ test("reflection image and caption survive reload and are included in backup", a
   ).toBe(true);
   await page.goto("/settings/data");
   await page.locator('input[type="file"]').setInputFiles({
-    name: download.suggestedFilename(), mimeType: "application/zip",
+    name: download.suggestedFilename(),
+    mimeType: "application/zip",
     buffer: await readFile(await download.path()),
   });
   await expect(page.getByText(/1 reflections\/quotes, 1 images/)).toBeVisible();

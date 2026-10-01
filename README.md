@@ -37,7 +37,7 @@ Webpack is explicitly selected for development and production builds because Tur
 - Text-first capture, with reflection/quote toggle and optional quote attribution.
 - Save with one button or Command/Ctrl + Enter; no title or categorization required.
 - Search content and attribution; filter by entry type.
-- Add one optional image and caption to a reflection; edit or remove the image later. Images are resized in the browser and saved as WebP without original camera metadata.
+- Add one optional image and caption to a reflection; the picker previews the photo before saving, and saved entries show a small thumbnail. Images are resized in the browser and saved as WebP without original camera metadata.
 - Edit entries, confirm deletion, and download a versioned backup (ZIP when images are present, JSON otherwise).
 - Desktop/mobile layout, keyboard focus states, form labels, and live save feedback.
 - Browser persistence, cross-tab updates, visible storage errors, and retention of draft text after failed writes.
@@ -55,6 +55,7 @@ Webpack is explicitly selected for development and production builds because Tur
 ### Gratitude
 
 - Capture experiences you feel grateful for, with an optional title; search, edit, or delete them.
+- Add one optional image and caption to a gratitude entry using the same picker and thumbnail preview as Reflections.
 - Select words in the writing box and tap **Bold** (or use Command/Ctrl+B). Bold phrases show in the live preview and saved entries. Only bold markup is supported; text is rendered safely without HTML.
 - Entries are included in complete JSON backups and cloud import verification.
 
@@ -78,7 +79,7 @@ src/
       model.ts               Domain types, validation, search
       repository.ts          Small asynchronous domain persistence contract
       local-repository.ts    Browser adapter for reflection records
-      image-storage.ts       Browser image storage and resizing
+      image-storage.ts       Browser image storage
       server-repository.ts   Owner-scoped PostgreSQL operations
       client-repository.ts   Local/cloud adapter selection
       components/            Reflections interaction and presentation
@@ -106,7 +107,7 @@ Reading owns its own model and repository, with local records under `personal-hu
 
 **Local mode:** entries remain in localStorage and optional images in IndexedDB on this browser and origin. Anyone with access to this browser profile can read them. Clearing site data or changing hostname, scheme, or port makes the collection unavailable. Keep a complete JSON or ZIP backup before changing storage mode.
 
-**Cloud mode:** Everyone can read published reflections and quotes, attached images, books and notes, and gratitude entries without signing in. Images live in a public Supabase Storage bucket; anyone with an image URL can read it. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL and Storage policies independently check the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
+**Cloud mode:** Everyone can read published reflections and quotes, attached images, books and notes, and gratitude entries with their images without signing in. Images live in public Supabase Storage buckets; anyone with an image URL can read it. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL and Storage policies independently check the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
 
 Vercel always forces cloud mode and fails closed if credentials are missing. Other hosts must explicitly set `APP_STORAGE_MODE=cloud`. Do not publish the local development server. Keep database administration and auth-user creation outside the public app. `noindex` is included, but it is not access control.
 

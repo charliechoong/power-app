@@ -5,6 +5,10 @@ import "./reflections.css";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icon";
 import {
+  ImageAttachmentField,
+  ImageDisplay,
+} from "@/components/image-attachment";
+import {
   CONTENT_LIMIT,
   filterEntries,
   type Entry,
@@ -16,9 +20,8 @@ import {
   exportReflections,
   saveReflectionImage,
   removeReflectionImage,
-  getReflectionImage,
 } from "../client-repository";
-import { prepareImage } from "../image-storage";
+import { getLocalImage, prepareImage } from "../image-storage";
 import { useStorageMode } from "@/lib/storage-mode";
 import { useCanEdit } from "@/lib/edit-access";
 
@@ -121,7 +124,10 @@ export function ReflectionsWorkspace() {
           kind,
           content,
           attribution,
-          imageCaption: removeImage || (!imageFile && !editing?.imagePath) ? "" : imageCaption,
+          imageCaption:
+            removeImage || (!imageFile && !editing?.imagePath)
+              ? ""
+              : imageCaption,
         },
         editing,
       );
@@ -307,44 +313,22 @@ export function ReflectionsWorkspace() {
             )}
             {kind === "reflection" && (
               <div className="reflection-image-field">
-                <label htmlFor="reflection-image">
-                  Image <span>(optional, one per reflection)</span>
-                </label>
-                <input
+                <ImageAttachmentField
                   id="reflection-image"
-                  type="file"
-                  accept="image/*"
+                  file={imageFile}
+                  onFileChange={setImageFile}
+                  hasExisting={!!editing?.imagePath}
+                  removed={removeImage}
+                  onRemoveChange={setRemoveImage}
+                  caption={imageCaption}
+                  onCaptionChange={setImageCaption}
                   disabled={busy}
-                  onChange={(event) => {
-                    setImageFile(event.target.files?.[0]);
-                    setRemoveImage(false);
-                  }}
+                  existingImage={
+                    editing?.imagePath && (
+                      <ReflectionImage entry={editing} mode={mode} compact />
+                    )
+                  }
                 />
-                {editing?.imagePath && !imageFile && !removeImage && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() => setRemoveImage(true)}
-                  >
-                    Remove existing image
-                  </button>
-                )}
-                {removeImage && (
-                  <span>Image will be removed when you save.</span>
-                )}
-                {(imageFile || (editing?.imagePath && !removeImage)) && (
-                  <label htmlFor="image-caption">
-                    Caption <span>(optional)</span>
-                    <input
-                      id="image-caption"
-                      value={imageCaption}
-                      maxLength={300}
-                      disabled={busy}
-                      onChange={(event) => setImageCaption(event.target.value)}
-                      placeholder="A few words about this image"
-                    />
-                  </label>
-                )}
               </div>
             )}
             <div className="composer-footer">
@@ -611,45 +595,23 @@ export function ReflectionsWorkspace() {
 function ReflectionImage({
   entry,
   mode,
+  compact = false,
 }: {
   entry: Entry;
   mode: "local" | "cloud";
+  compact?: boolean;
 }) {
-  const [localUrl, setLocalUrl] = useState("");
-  useEffect(() => {
-    if (mode !== "local") return;
-    let url = "";
-    let active = true;
-    getReflectionImage(mode, entry)
-      .then((blob) => {
-        if (!active) return;
-        url = URL.createObjectURL(blob);
-        setLocalUrl(url);
-      })
-      .catch(() => setLocalUrl(""));
-    return () => {
-      active = false;
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [mode, entry]);
-  const src =
-    mode === "cloud"
-      ? `/api/reflections/${encodeURIComponent(entry.id)}/image?v=${encodeURIComponent(entry.imagePath ?? "")}`
-      : localUrl;
-  if (!src)
-    return (
-      <p className="image-unavailable">Image unavailable on this device.</p>
-    );
   return (
-    <figure className="reflection-image">
-      {/* The image may be stored in browser storage or redirected to Supabase Storage. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={entry.imageCaption || "Image attached to reflection"}
-        loading="lazy"
-      />
-      {entry.imageCaption && <figcaption>{entry.imageCaption}</figcaption>}
-    </figure>
+    <ImageDisplay
+      id={entry.id}
+      caption={entry.imageCaption}
+      compact={compact}
+      cloudUrl={
+        mode === "cloud"
+          ? `/api/reflections/${encodeURIComponent(entry.id)}/image?v=${encodeURIComponent(entry.imagePath ?? "")}`
+          : undefined
+      }
+      loadLocal={mode === "local" ? getLocalImage : undefined}
+    />
   );
 }

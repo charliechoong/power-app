@@ -2,6 +2,8 @@ export type GratitudeEntry = {
   id: string;
   title: string;
   content: string;
+  imagePath?: string;
+  imageCaption?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -9,7 +11,10 @@ export type GratitudeEntry = {
 export const GRATITUDE_CONTENT_LIMIT = 10000;
 export const GRATITUDE_TITLE_LIMIT = 200;
 
-export type GratitudeInput = Pick<GratitudeEntry, "title" | "content">;
+export type GratitudeInput = Pick<
+  GratitudeEntry,
+  "title" | "content" | "imageCaption"
+>;
 
 export function validateGratitudeInput(value: unknown): GratitudeInput {
   if (!value || typeof value !== "object")
@@ -20,7 +25,19 @@ export function validateGratitudeInput(value: unknown): GratitudeInput {
   const title = (input.title ?? "").trim();
   if (title.length > GRATITUDE_TITLE_LIMIT)
     throw new Error("Keep the title under 200 characters.");
-  return { title, content: validateGratitude(input.content) };
+  if (
+    input.imageCaption !== undefined &&
+    typeof input.imageCaption !== "string"
+  )
+    throw new Error("Use text for the image caption.");
+  const imageCaption = input.imageCaption?.trim();
+  if (imageCaption && imageCaption.length > 300)
+    throw new Error("Keep the image caption under 300 characters.");
+  return {
+    title,
+    content: validateGratitude(input.content),
+    ...(imageCaption ? { imageCaption } : {}),
+  };
 }
 
 export function validateGratitude(content: unknown): string {
@@ -42,12 +59,15 @@ export function parseGratitude(value: unknown): GratitudeEntry {
     typeof entry.createdAt !== "string" ||
     !Number.isFinite(Date.parse(entry.createdAt)) ||
     typeof entry.updatedAt !== "string" ||
-    !Number.isFinite(Date.parse(entry.updatedAt))
+    !Number.isFinite(Date.parse(entry.updatedAt)) ||
+    (entry.imagePath != null &&
+      (typeof entry.imagePath !== "string" || entry.imagePath.length > 300))
   )
     throw new Error("Invalid gratitude entry.");
   return {
     id: entry.id,
     ...validateGratitudeInput(entry),
+    ...(entry.imagePath ? { imagePath: entry.imagePath } : {}),
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt,
   };

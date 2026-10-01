@@ -1,8 +1,7 @@
 "use client";
 
-export { MAX_IMAGE_BYTES, prepareImage } from "@/lib/prepare-image";
+const DATABASE = "commonplace-gratitude-images";
 const STORE = "images";
-const DATABASE = "commonplace-reflection-images";
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -31,12 +30,15 @@ async function transact<T>(
   }
 }
 
-export function getLocalImage(id: string): Promise<Blob | undefined> {
+export function getLocalGratitudeImage(id: string): Promise<Blob | undefined> {
   return transact("readonly", (store) => store.get(id));
 }
-export function putLocalImage(id: string, blob: Blob): Promise<IDBValidKey> {
+export function putLocalGratitudeImage(
+  id: string,
+  blob: Blob,
+): Promise<IDBValidKey> {
   return transact("readwrite", (store) => store.put(blob, id));
 }
-export function deleteLocalImage(id: string): Promise<undefined> {
+export function deleteLocalGratitudeImage(id: string): Promise<undefined> {
   return transact("readwrite", (store) => store.delete(id));
 }

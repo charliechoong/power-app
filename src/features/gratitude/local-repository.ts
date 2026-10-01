@@ -4,6 +4,7 @@ import {
   type GratitudeEntry,
 } from "./model";
 import type { GratitudeRepository } from "./repository";
+import { deleteLocalGratitudeImage } from "./image-storage";
 
 export const GRATITUDE_STORAGE_PREFIX = "personal-hub:gratitude:v1:";
 
@@ -41,6 +42,7 @@ export function createLocalGratitudeRepository(
       const entry: GratitudeEntry = {
         id: existing?.id ?? crypto.randomUUID(),
         ...validateGratitudeInput(input),
+        ...(existing?.imagePath ? { imagePath: existing.imagePath } : {}),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };
@@ -51,7 +53,10 @@ export function createLocalGratitudeRepository(
       return entry;
     },
     async remove(id) {
+      const existing = getStorage().getItem(GRATITUDE_STORAGE_PREFIX + id);
       getStorage().removeItem(GRATITUDE_STORAGE_PREFIX + id);
+      if (existing && parseGratitude(JSON.parse(existing)).imagePath)
+        await deleteLocalGratitudeImage(id);
     },
   };
 }

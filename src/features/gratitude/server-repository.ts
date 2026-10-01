@@ -8,7 +8,8 @@ import {
   type GratitudeInput,
 } from "./model";
 
-const fields = "id,title,content,createdAt:created_at,updatedAt:updated_at";
+const fields =
+  "id,title,content,imagePath:image_path,imageCaption:image_caption,createdAt:created_at,updatedAt:updated_at";
 
 export function gratitudeServer({ db, owner }: OwnerContext) {
   return {
@@ -33,13 +34,20 @@ export function gratitudeServer({ db, owner }: OwnerContext) {
       const query = id
         ? db
             .from("gratitude_entries")
-            .update({ ...clean, updated_at: now })
+            .update({
+              title: clean.title,
+              content: clean.content,
+              image_caption: clean.imageCaption ?? "",
+              updated_at: now,
+            })
             .eq("owner_id", owner)
             .eq("id", id)
         : db.from("gratitude_entries").insert({
             id: crypto.randomUUID(),
             owner_id: owner,
-            ...clean,
+            title: clean.title,
+            content: clean.content,
+            image_caption: clean.imageCaption ?? "",
             created_at: now,
             updated_at: now,
           });
@@ -49,12 +57,23 @@ export function gratitudeServer({ db, owner }: OwnerContext) {
       return parseGratitude(data);
     },
     async remove(id: string) {
+      const previous = await db
+        .from("gratitude_entries")
+        .select("image_path")
+        .eq("owner_id", owner)
+        .eq("id", id)
+        .maybeSingle();
+      if (previous.error) throw previous.error;
       const { error } = await db
         .from("gratitude_entries")
         .delete()
         .eq("owner_id", owner)
         .eq("id", id);
       if (error) throw error;
+      if (previous.data?.image_path)
+        await db.storage
+          .from("gratitude-images")
+          .remove([previous.data.image_path]);
     },
   };
 }

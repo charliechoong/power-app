@@ -4,10 +4,12 @@ import { useStorageMode } from "@/lib/storage-mode";
 import { cloudRequest } from "@/lib/cloud-client";
 import {
   downloadArchive,
+  imageKey,
   readArchive,
   type ArchiveSelection,
 } from "./image-archive";
 import { getReflectionImage } from "@/features/reflections/client-repository";
+import { getGratitudeImage } from "@/features/gratitude/client-repository";
 import {
   MAX_BACKUP_BYTES,
   REFLECTIONS_PREFIX,
@@ -60,9 +62,14 @@ export function DataManager() {
     const imageMap = new Map(values.flatMap((item) => [...item.images]));
     const data = parseBackups(backups);
     for (const entry of data.entries)
-      if (entry.imagePath && !imageMap.has(entry.id))
+      if (entry.imagePath && !imageMap.has(imageKey("reflections", entry.id)))
         throw new Error(
           `The image for reflection ${entry.id} is missing from the selected backups.`,
+        );
+    for (const entry of data.gratitudes)
+      if (entry.imagePath && !imageMap.has(imageKey("gratitude", entry.id)))
+        throw new Error(
+          `The image for gratitude entry ${entry.id} is missing from the selected backups.`,
         );
     if (
       new TextEncoder().encode(JSON.stringify({ backups, dryRun: false }))
@@ -105,8 +112,8 @@ export function DataManager() {
       <section className="data-panel">
         <h2>Keep a backup</h2>
         <p>
-          Download reflections, images, books, progress, book notes, and
-          gratitude entries together. This file contains private data. Backups
+          Download reflections, books, progress, book notes, gratitude entries,
+          and their images together. This file contains private data. Backups
           with images download as ZIP files.
         </p>
         <button
@@ -166,8 +173,14 @@ export function DataManager() {
               for (const entry of parseBackups([backup]).entries)
                 if (entry.imagePath)
                   imageMap.set(
-                    entry.id,
+                    imageKey("reflections", entry.id),
                     await getReflectionImage("local", entry),
+                  );
+              for (const entry of parseBackups([backup]).gratitudes)
+                if (entry.imagePath)
+                  imageMap.set(
+                    imageKey("gratitude", entry.id),
+                    await getGratitudeImage("local", entry),
                   );
               select([{ backup, images: imageMap }]);
             });
@@ -217,17 +230,27 @@ export function DataManager() {
                     { backups, dryRun: false },
                   );
                   if (images.size) {
-                    const expected = parseBackups(backups).entries;
-                    const current =
-                      await cloudRequest<
-                        import("@/features/reflections/model").Entry[]
-                      >("/api/reflections");
-                    const byId = new Map(
-                      current.map((entry) => [entry.id, entry]),
+                    const expected = parseBackups(backups);
+                    const [currentReflections, currentGratitudes] =
+                      await Promise.all([
+                        cloudRequest<
+                          import("@/features/reflections/model").Entry[]
+                        >("/api/reflections"),
+                        cloudRequest<
+                          import("@/features/gratitude/model").GratitudeEntry[]
+                        >("/api/gratitude"),
+                      ]);
+                    const reflectionsById = new Map(
+                      currentReflections.map((entry) => [entry.id, entry]),
                     );
-                    for (const entry of expected) {
-                      const blob = images.get(entry.id);
-                      const target = byId.get(entry.id);
+                    const gratitudesById = new Map(
+                      currentGratitudes.map((entry) => [entry.id, entry]),
+                    );
+                    for (const entry of expected.entries) {
+                      const blob = images.get(
+                        imageKey("reflections", entry.id),
+                      );
+                      const target = reflectionsById.get(entry.id);
                       if (!blob || !target || target.imagePath) continue;
                       if (
                         target.kind !== entry.kind ||
@@ -250,6 +273,35 @@ export function DataManager() {
                       if (!response.ok)
                         throw new Error(
                           `Could not restore the image for reflection ${entry.id}. Retry the import.`,
+                        );
+                    }
+                    for (const entry of expected.gratitudes) {
+                      const blob = images.get(imageKey("gratitude", entry.id));
+                      const target = gratitudesById.get(entry.id);
+                      if (
+                        !blob ||
+                        !target ||
+                        target.imagePath ||
+                        target.content !== entry.content ||
+                        target.title !== entry.title
+                      )
+                        continue;
+                      const response = await fetch(
+                        `/api/gratitude/${encodeURIComponent(entry.id)}/image`,
+                        {
+                          method: "POST",
+                          body: blob,
+                          headers: {
+                            "Content-Type": "image/webp",
+                            "X-Image-Caption": encodeURIComponent(
+                              entry.imageCaption ?? "",
+                            ),
+                          },
+                        },
+                      );
+                      if (!response.ok)
+                        throw new Error(
+                          `Could not restore the image for gratitude entry ${entry.id}. Retry the import.`,
                         );
                     }
                   }

@@ -4,7 +4,7 @@ The intended setup is Vercel Hobby plus Supabase Free in Singapore (`ap-southeas
 
 ## 1. Preserve the current data
 
-Open the **original browser profile and exact origin** currently used (`http://127.0.0.1:3101`). Go to **Data & backups → Download complete backup**. Store the JSON or ZIP somewhere private. It includes reflections, quotes, any reflection images, books, progress, book notes, and gratitude entries. Keep the original local data as well.
+Open the **original browser profile and exact origin** currently used (`http://127.0.0.1:3101`). Go to **Data & backups → Download complete backup**. Store the JSON or ZIP somewhere private. It includes reflections, quotes, books, progress, book notes, gratitude entries, and their images. Keep the original local data as well.
 
 Opening `localhost`, a different port, or the hosted domain cannot read that origin's localStorage. Use the downloaded file on the hosted app. Do not copy the contents into source code, chat, or environment variables.
 
@@ -15,7 +15,8 @@ Opening `localhost`, a different port, or the hosted domain cannot read that ori
    Apply `supabase/migrations/202609270001_gratitude.sql` after the foundation migration to add Gratitude storage and extend the importer.
    Apply `supabase/migrations/202609270002_gratitude_titles.sql` afterward to add optional titles while preserving existing Gratitude entries.
    Apply `supabase/migrations/20260928135825_public_read_owner_write.sql` next to allow public reading of all current content while keeping writes owner-only. Apply it only if you intend to make every existing reflection, quote, book, note, and gratitude entry public.
-   Apply `supabase/migrations/202610010001_reflection_images.sql` last to add reflection images and a public Storage bucket with owner-only upload and deletion.
+   Apply `supabase/migrations/202610010001_reflection_images.sql` to add reflection images and a public Storage bucket with owner-only upload and deletion.
+   Apply `supabase/migrations/20261001072817_gratitude_images.sql` last to add the same image support for Gratitude.
 3. In Authentication settings, disable new user signups and anonymous sign-ins. Keep email/password sign-in enabled.
 4. In Authentication → Users, manually create your own email/password user with email confirmed. Choose and store the password privately; it is not an application environment variable. There is no public registration or password-reset flow in this MVP. Account recovery is administered through Supabase; configure custom SMTP before relying on email recovery.
 5. Copy that auth user's UUID and allowlist it in SQL:
@@ -35,13 +36,13 @@ Deploy this repository as a Next.js project with Node 24, install command `npm c
 
 Set the following in Vercel's **Production** environment before deploying:
 
-| Variable | Value |
-| --- | --- |
-| `APP_STORAGE_MODE` | `cloud` |
-| `SUPABASE_URL` | Project HTTPS URL |
-| `SUPABASE_PUBLISHABLE_KEY` | Project publishable key |
-| `APP_OWNER_ID` | Same auth UUID as the database allowlist |
-| `APP_URL` | Exact canonical HTTPS deployment URL, without a path |
+| Variable                   | Value                                                |
+| -------------------------- | ---------------------------------------------------- |
+| `APP_STORAGE_MODE`         | `cloud`                                              |
+| `SUPABASE_URL`             | Project HTTPS URL                                    |
+| `SUPABASE_PUBLISHABLE_KEY` | Project publishable key                              |
+| `APP_OWNER_ID`             | Same auth UUID as the database allowlist             |
+| `APP_URL`                  | Exact canonical HTTPS deployment URL, without a path |
 
 Use the free `*.vercel.app` domain. If the domain is assigned during the first deployment, set `APP_URL` afterward and redeploy. Set Supabase's Site URL to that domain. Password sign-in does not require an OAuth callback. Do not add broad redirect wildcards.
 
@@ -57,16 +58,16 @@ Keep production credentials out of Preview environments until you deliberately w
 6. Inspect a reflection, a book's page progress, and its notes. Refresh, then sign in from another device and confirm the same data is present. Sign out and confirm the content stays readable while create, edit, delete, and import requests are rejected.
 7. Download a fresh cloud backup. Retain the original browser data and export until you are satisfied with the migration.
 
-Imports accept one to ten version 1 JSON or ZIP backups, at most 10,000 top-level records and a combined JSON manifest request under 3 MB (below Vercel's function request limit). Each reflection image is limited to 2 MB and is uploaded separately during import. Larger text backups need to be split at record boundaries. Exports page through all database rows. Avoid concurrent edits during migration and export; multi-request exports are not transaction snapshots.
+Imports accept one to ten version 1 JSON or ZIP backups, at most 10,000 top-level records and a combined JSON manifest request under 3 MB (below Vercel's function request limit). Each reflection or gratitude image is limited to 2 MB and is uploaded separately during import. Larger text backups need to be split at record boundaries. Exports page through all database rows. Avoid concurrent edits during migration and export; multi-request exports are not transaction snapshots.
 
 ## Cost and limits
 
 Checked 26 September 2026; verify pricing before changing plans.
 
-| Service | Starting price | Relevant included limits |
-| --- | --- | --- |
-| Supabase Free | US$0/month | 500 MB database; 5 GB egress; 50,000 monthly active users; two active free projects. Pauses after a week of inactivity; automatic backups are not included. |
-| Vercel Hobby | US$0/month | Personal, noncommercial use; 100 GB fast data transfer; one million edge requests; usage limits apply to functions and compute. |
+| Service       | Starting price | Relevant included limits                                                                                                                                    |
+| ------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Supabase Free | US$0/month     | 500 MB database; 5 GB egress; 50,000 monthly active users; two active free projects. Pauses after a week of inactivity; automatic backups are not included. |
+| Vercel Hobby  | US$0/month     | Personal, noncommercial use; 100 GB fast data transfer; one million edge requests; usage limits apply to functions and compute.                             |
 
 [Supabase pricing](https://supabase.com/pricing) · [Vercel Hobby limits](https://vercel.com/docs/plans/hobby)
 

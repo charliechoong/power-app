@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import JSZip from "jszip";
 
 test("capture, bold, edit, back up, and delete an experience", async ({
   page,
@@ -68,4 +70,61 @@ test("title remains optional", async ({ page }) => {
     "A quiet morning outside.",
   );
   await expect(page.locator(".gratitude-card-title")).toHaveCount(0);
+});
+
+test("gratitude image previews before saving, persists, and joins the backup", async ({
+  page,
+}) => {
+  await page.goto("/gratitude");
+  await page
+    .getByLabel("Your grateful experience")
+    .fill("A place I remember warmly.");
+  await expect(page.getByText("Add an image")).toBeVisible();
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 10;
+    canvas.getContext("2d")!.fillRect(0, 0, 10, 10);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  const chooserPromise = page.waitForEvent("filechooser");
+  await page.getByText("Add an image").click();
+  await (
+    await chooserPromise
+  ).setFiles({
+    name: "moment.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(png, "base64"),
+  });
+  await expect(page.getByAltText("Selected image preview")).toBeVisible();
+  await page.getByLabel("Caption").fill("A small joy");
+  await page.getByRole("button", { name: "Save experience" }).click();
+  await expect(page.locator(".gratitude-card img")).toBeVisible();
+  await expect(page.locator(".gratitude-card figcaption")).toHaveText(
+    "A small joy",
+  );
+  await page.reload();
+  await expect(page.locator(".gratitude-card img")).toBeVisible();
+  await page.goto("/settings/data");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download complete backup" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
+  const zip = await JSZip.loadAsync(await readFile(await download.path()));
+  expect(
+    Object.keys(zip.files).some(
+      (name) => name.startsWith("images/gratitude/") && name.endsWith(".webp"),
+    ),
+  ).toBe(true);
+  await page.locator('input[type="file"]').setInputFiles({
+    name: download.suggestedFilename(),
+    mimeType: "application/zip",
+    buffer: await readFile(await download.path()),
+  });
+  await expect(page.getByText(/1 images, 0 books/)).toBeVisible();
+  await page.goto("/gratitude");
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.locator(".image-attachment-thumb img")).toBeVisible();
+  await page.getByRole("button", { name: "Remove", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.locator(".gratitude-card img")).toHaveCount(0);
 });

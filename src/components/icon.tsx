@@ -12,7 +12,8 @@ type Name =
   | "trash"
   | "check"
   | "device"
-  | "heart";
+  | "heart"
+  | "image";
 const paths: Record<Name, React.ReactNode> = {
   home: (
     <>
@@ -57,6 +58,13 @@ const paths: Record<Name, React.ReactNode> = {
   ),
   heart: (
     <path d="M20.8 8.6c0 4.2-5.3 8.1-8.8 11-3.5-2.9-8.8-6.8-8.8-11a4.9 4.9 0 0 1 8.8-2.9 4.9 4.9 0 0 1 8.8 2.9Z" />
+  ),
+  image: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="8.5" cy="9" r="1.5" />
+      <path d="m4 17 5-5 4 4 3-3 5 5" />
+    </>
   ),
 };
 export function Icon({

@@ -62,3 +62,35 @@ test("old gratitude backups without a title remain importable", () => {
   };
   assert.equal(parseBackups([backup]).gratitudes[0].title, "");
 });
+
+test("gratitude images and captions verify across local and cloud paths", () => {
+  const local = {
+    id: "g-photo",
+    title: "A moment",
+    content: "Grateful for this place",
+    imagePath: "local:g-photo",
+    imageCaption: "At sunset",
+    createdAt: "2026-09-27T00:00:00.000Z",
+    updatedAt: "2026-09-27T00:00:00.000Z",
+  };
+  const restored = parseBackups([
+    makeBackup({ entries: [], books: [], gratitudes: [local] }),
+  ]);
+  assert.equal(restored.gratitudes[0].imageCaption, "At sunset");
+  assert.equal(
+    verifyImport(restored, {
+      entries: [],
+      books: [],
+      gratitudes: [{ ...local, imagePath: "owner/new.webp" }],
+    }).matchedGratitudes,
+    1,
+  );
+  assert.equal(
+    verifyImport(restored, {
+      entries: [],
+      books: [],
+      gratitudes: [{ ...local, imagePath: undefined }],
+    }).differences.length,
+    1,
+  );
+});
