@@ -37,7 +37,8 @@ Webpack is explicitly selected for development and production builds because Tur
 - Text-first capture, with reflection/quote toggle and optional quote attribution.
 - Save with one button or Command/Ctrl + Enter; no title or categorization required.
 - Search content and attribution; filter by entry type.
-- Edit entries, confirm deletion, and download a versioned JSON backup.
+- Add one optional image and caption to a reflection; edit or remove the image later. Images are resized in the browser and saved as WebP without original camera metadata.
+- Edit entries, confirm deletion, and download a versioned backup (ZIP when images are present, JSON otherwise).
 - Desktop/mobile layout, keyboard focus states, form labels, and live save feedback.
 - Browser persistence, cross-tab updates, visible storage errors, and retention of draft text after failed writes.
 
@@ -57,7 +58,7 @@ Webpack is explicitly selected for development and production builds because Tur
 - Select words in the writing box and tap **Bold** (or use Command/Ctrl+B). Bold phrases show in the live preview and saved entries. Only bold markup is supported; text is rendered safely without HTML.
 - Entries are included in complete JSON backups and cloud import verification.
 
-There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all three domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Backups are plaintext private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
+There are no seeded entries. Unsaved drafts live in memory and are lost on a reload or closed tab. **Data & backups** downloads all three domains together and supports previewing, importing, and verifying version 1 backups in cloud mode. Images are included in ZIP backups alongside the version 1 JSON manifest; old JSON backups still import. Backups are unencrypted private files. Import preserves IDs, timestamps, progress and notes; existing cloud records are skipped. Local storage is never cleared by migration.
 
 ## Architecture
 
@@ -76,7 +77,8 @@ src/
       index.ts               Public UI entry point
       model.ts               Domain types, validation, search
       repository.ts          Small asynchronous domain persistence contract
-      local-repository.ts    Browser adapter and raw backup export
+      local-repository.ts    Browser adapter for reflection records
+      image-storage.ts       Browser image storage and resizing
       server-repository.ts   Owner-scoped PostgreSQL operations
       client-repository.ts   Local/cloud adapter selection
       components/            Reflections interaction and presentation
@@ -96,15 +98,15 @@ Route files compose features; features never import from `app/`. Future domains 
 
 Reflection and quote share an entry model because capture, listing, editing, and storage have the same lifecycle. A `kind` field distinguishes them; only quotes retain attribution. IDs and creation/update timestamps remain stable through editing. Each domain's small async repository contract has browser and HTTP adapters; it is not a cross-domain abstraction.
 
-The browser adapter stores one JSON record per entry under `personal-hub:reflections:v1:<id>`. Unrelated entries saved from separate tabs cannot overwrite each other. Same-entry concurrent edits use last-write-wins. Storage events refresh other open tabs. Runtime validation checks stored values; malformed records produce a visible error and block capture rather than silently resetting or overwriting the collection. Backup export preserves raw records even when validation fails. Browser quota/permission errors do not clear the composer.
+The browser adapter stores one JSON record per entry under `personal-hub:reflections:v1:<id>` and optional image blobs in IndexedDB. Unrelated entries saved from separate tabs cannot overwrite each other. Same-entry concurrent edits use last-write-wins. Storage events refresh other open tabs. Runtime validation checks stored values; malformed records produce a visible error and block capture rather than silently resetting or overwriting the collection. Browser quota/permission errors do not clear the composer.
 
 Reading owns its own model and repository, with local records under `personal-hub:reading:v1:<id>`. It does not import Reflections code or use its storage keys. The shared shell composes links to each route. Concurrent changes to the same record use last-write-wins. Each module exports its own backup. Cloud mode stores books and notes in separate owner-scoped tables; updating progress cannot overwrite notes. Lists refresh on window focus; there is no realtime or offline cloud sync.
 
 ## Privacy and deployment boundary
 
-**Local mode:** entries remain in localStorage on this browser and origin. Anyone with access to this browser profile can read them. Clearing site data or changing hostname, scheme, or port makes the collection unavailable. Keep a JSON backup before changing storage mode.
+**Local mode:** entries remain in localStorage and optional images in IndexedDB on this browser and origin. Anyone with access to this browser profile can read them. Clearing site data or changing hostname, scheme, or port makes the collection unavailable. Keep a complete JSON or ZIP backup before changing storage mode.
 
-**Cloud mode:** Everyone can read published reflections and quotes, books and notes, and gratitude entries without signing in. This includes direct read access through the Supabase Data API; do not save anything you want to keep private. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL row-level security independently checks the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
+**Cloud mode:** Everyone can read published reflections and quotes, attached images, books and notes, and gratitude entries without signing in. Images live in a public Supabase Storage bucket; anyone with an image URL can read it. Supabase Auth verifies the owner for every write and backup/import request, and PostgreSQL and Storage policies independently check the private owner allowlist. The application uses the publishable key and the user's session, never a service-role key. Sessions are stored in HttpOnly cookies; mutations require the configured origin; responses are not cached. There is no public signup. An empty owner allowlist denies all writes.
 
 Vercel always forces cloud mode and fails closed if credentials are missing. Other hosts must explicitly set `APP_STORAGE_MODE=cloud`. Do not publish the local development server. Keep database administration and auth-user creation outside the public app. `noindex` is included, but it is not access control.
 

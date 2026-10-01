@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import JSZip from "jszip";
 
 test("capture, reload, quote, search, edit, delete, export", async ({
   page,
@@ -91,4 +93,47 @@ test("new entries sync between tabs", async ({ page, context }) => {
   await page.getByLabel("Your reflection", { exact: true }).fill("Across tabs");
   await page.getByRole("button", { name: "Save thought", exact: true }).click();
   await expect(other.locator("article")).toContainText("Across tabs");
+});
+
+test("reflection image and caption survive reload and are included in backup", async ({
+  page,
+}) => {
+  await page.goto("/reflections");
+  await page
+    .getByLabel("Your reflection", { exact: true })
+    .fill("A quiet morning");
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 10;
+    canvas.getContext("2d")!.fillRect(0, 0, 10, 10);
+    return canvas.toDataURL("image/png").split(",")[1];
+  });
+  await page.locator("#reflection-image").setInputFiles({
+    name: "morning.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(png, "base64"),
+  });
+  await page.getByLabel("Caption").fill("A small moment");
+  await page.getByRole("button", { name: "Save thought", exact: true }).click();
+  await expect(page.locator("article img")).toBeVisible();
+  await expect(page.locator("article figcaption")).toHaveText("A small moment");
+  await page.reload();
+  await expect(page.locator("article img")).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export backup" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
+  const zip = await JSZip.loadAsync(await readFile(await download.path()));
+  expect(zip.file("backup.json")).toBeTruthy();
+  expect(
+    Object.keys(zip.files).some(
+      (name) => name.startsWith("images/") && name.endsWith(".webp"),
+    ),
+  ).toBe(true);
+  await page.goto("/settings/data");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: download.suggestedFilename(), mimeType: "application/zip",
+    buffer: await readFile(await download.path()),
+  });
+  await expect(page.getByText(/1 reflections\/quotes, 1 images/)).toBeVisible();
 });

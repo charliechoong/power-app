@@ -1,5 +1,6 @@
 import { parseEntry, validateInput, type Entry } from "./model";
 import type { ReflectionsRepository } from "./repository";
+import { deleteLocalImage } from "./image-storage";
 
 export const STORAGE_PREFIX = "personal-hub:reflections:v1:";
 
@@ -39,6 +40,7 @@ export function createLocalRepository(
       const now = new Date().toISOString();
       const entry: Entry = {
         ...clean,
+        ...(existing?.imagePath ? { imagePath: existing.imagePath } : {}),
         id: existing?.id ?? crypto.randomUUID(),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
@@ -47,35 +49,12 @@ export function createLocalRepository(
       return entry;
     },
     async remove(id) {
+      const existing = getStorage().getItem(STORAGE_PREFIX + id);
       getStorage().removeItem(STORAGE_PREFIX + id);
+      if (existing && parseEntry(JSON.parse(existing)).imagePath)
+        await deleteLocalImage(id);
     },
   };
 }
 
 export const localRepository = createLocalRepository(() => window.localStorage);
-
-// Preserve raw values so a backup remains possible even if an entry is malformed.
-export function downloadBackup() {
-  const records: Record<string, string> = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key?.startsWith(STORAGE_PREFIX))
-      records[key] = localStorage.getItem(key) ?? "";
-  }
-  const blob = new Blob(
-    [
-      JSON.stringify(
-        { version: 1, exportedAt: new Date().toISOString(), records },
-        null,
-        2,
-      ),
-    ],
-    { type: "application/json" },
-  );
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `reflections-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}

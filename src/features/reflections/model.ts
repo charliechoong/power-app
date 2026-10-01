@@ -4,11 +4,15 @@ export type Entry = {
   kind: EntryKind;
   content: string;
   attribution: string;
+  imagePath?: string;
+  imageCaption?: string;
   createdAt: string;
   updatedAt: string;
 };
-export type EntryInput = Pick<Entry, "kind" | "content" | "attribution">;
+export type EntryInput = Pick<Entry, "kind" | "content" | "attribution"> &
+  Pick<Entry, "imageCaption">;
 export const CONTENT_LIMIT = 10000;
+export const IMAGE_CAPTION_LIMIT = 300;
 
 export function validateInput(input: EntryInput): EntryInput {
   if (input.kind !== "reflection" && input.kind !== "quote")
@@ -20,7 +24,16 @@ export function validateInput(input: EntryInput): EntryInput {
   const attribution = input.kind === "quote" ? input.attribution.trim() : "";
   if (attribution.length > 300)
     throw new Error("Please keep the attribution under 300 characters.");
-  return { kind: input.kind, content, attribution };
+  const imageCaption =
+    input.kind === "reflection" ? input.imageCaption?.trim() : undefined;
+  if (imageCaption && imageCaption.length > IMAGE_CAPTION_LIMIT)
+    throw new Error("Please keep the image caption under 300 characters.");
+  return {
+    kind: input.kind,
+    content,
+    attribution,
+    ...(imageCaption ? { imageCaption } : {}),
+  };
 }
 
 export function parseEntry(value: unknown): Entry {
@@ -34,11 +47,16 @@ export function parseEntry(value: unknown): Entry {
     typeof entry.createdAt !== "string" ||
     !Number.isFinite(Date.parse(entry.createdAt)) ||
     typeof entry.updatedAt !== "string" ||
-    !Number.isFinite(Date.parse(entry.updatedAt))
+    !Number.isFinite(Date.parse(entry.updatedAt)) ||
+    (entry.imagePath != null &&
+      (typeof entry.imagePath !== "string" || entry.imagePath.length > 300)) ||
+    (entry.imageCaption != null && typeof entry.imageCaption !== "string") ||
+    (entry.kind === "quote" && !!entry.imagePath)
   )
     throw new Error("Invalid entry.");
   return {
     ...validateInput(entry),
+    ...(entry.imagePath ? { imagePath: entry.imagePath } : {}),
     id: entry.id,
     createdAt: entry.createdAt,
     updatedAt: entry.updatedAt,

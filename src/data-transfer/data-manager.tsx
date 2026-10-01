@@ -2,7 +2,12 @@
 import { useState } from "react";
 import { useStorageMode } from "@/lib/storage-mode";
 import { cloudRequest } from "@/lib/cloud-client";
-import { downloadJson } from "@/lib/download-json";
+import {
+  downloadArchive,
+  readArchive,
+  type ArchiveSelection,
+} from "./image-archive";
+import { getReflectionImage } from "@/features/reflections/client-repository";
 import {
   MAX_BACKUP_BYTES,
   REFLECTIONS_PREFIX,
@@ -32,6 +37,7 @@ function localBackup(): Backup {
 export function DataManager() {
   const mode = useStorageMode();
   const [backups, setBackups] = useState<unknown[]>([]);
+  const [images, setImages] = useState<Map<string, Blob>>(new Map());
   const [summary, setSummary] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -46,21 +52,29 @@ export function DataManager() {
     setResult(null);
     setVerification(null);
     setBackups([]);
+    setImages(new Map());
     setSummary("");
   }
-  function select(values: unknown[]) {
-    const data = parseBackups(values);
+  function select(values: ArchiveSelection[]) {
+    const backups = values.map((item) => item.backup);
+    const imageMap = new Map(values.flatMap((item) => [...item.images]));
+    const data = parseBackups(backups);
+    for (const entry of data.entries)
+      if (entry.imagePath && !imageMap.has(entry.id))
+        throw new Error(
+          `The image for reflection ${entry.id} is missing from the selected backups.`,
+        );
     if (
-      new TextEncoder().encode(
-        JSON.stringify({ backups: values, dryRun: false }),
-      ).byteLength > MAX_BACKUP_BYTES
+      new TextEncoder().encode(JSON.stringify({ backups, dryRun: false }))
+        .byteLength > MAX_BACKUP_BYTES
     )
       throw new Error(
         "Use smaller backup files: the combined request must be under 3 MB.",
       );
-    setBackups(values);
+    setBackups(backups);
+    setImages(imageMap);
     setSummary(
-      `${data.entries.length} reflections/quotes, ${data.books.length} books, ${data.books.reduce((n, b) => n + b.notes.length, 0)} notes, ${data.gratitudes.length} gratitude entries.`,
+      `${data.entries.length} reflections/quotes, ${imageMap.size} images, ${data.books.length} books, ${data.books.reduce((n, b) => n + b.notes.length, 0)} notes, ${data.gratitudes.length} gratitude entries.`,
     );
   }
   async function run(operation: () => Promise<void>) {
@@ -91,8 +105,9 @@ export function DataManager() {
       <section className="data-panel">
         <h2>Keep a backup</h2>
         <p>
-          Download reflections, books, progress, book notes, and gratitude
-          entries together. This file contains private data.
+          Download reflections, images, books, progress, book notes, and
+          gratitude entries together. This file contains private data. Backups
+          with images download as ZIP files.
         </p>
         <button
           className="button primary"
@@ -103,9 +118,10 @@ export function DataManager() {
                 mode === "cloud"
                   ? await cloudRequest<Backup>("/api/data/export")
                   : localBackup();
-              downloadJson(
-                `commonplace-${new Date().toISOString().slice(0, 10)}.json`,
+              await downloadArchive(
                 backup,
+                mode,
+                `commonplace-${new Date().toISOString().slice(0, 10)}`,
               );
               setMessage("Backup downloaded. Keep it somewhere safe.");
             })
@@ -123,10 +139,10 @@ export function DataManager() {
         </p>
         <p>Your local data will remain in this browser after importing.</p>
         <label className="data-file">
-          Choose JSON backups
+          Choose JSON or ZIP backups
           <input
             type="file"
-            accept=".json,application/json"
+            accept=".json,.zip,application/json,application/zip"
             multiple
             disabled={busy}
             onChange={async (event) => {
@@ -134,15 +150,7 @@ export function DataManager() {
               reset();
               if (!files.length) return;
               await run(async () => {
-                if (files.reduce((n, f) => n + f.size, 0) > MAX_BACKUP_BYTES)
-                  throw new Error(
-                    "Choose backup files totaling less than 3 MB.",
-                  );
-                select(
-                  await Promise.all(
-                    files.map(async (file) => JSON.parse(await file.text())),
-                  ),
-                );
+                select(await Promise.all(files.map(readArchive)));
               });
             }}
           />
@@ -152,15 +160,17 @@ export function DataManager() {
           disabled={busy}
           onClick={() => {
             reset();
-            try {
-              select([localBackup()]);
-            } catch (reason) {
-              setError(
-                reason instanceof Error
-                  ? reason.message
-                  : "Could not read browser data.",
-              );
-            }
+            void run(async () => {
+              const backup = localBackup();
+              const imageMap = new Map<string, Blob>();
+              for (const entry of parseBackups([backup]).entries)
+                if (entry.imagePath)
+                  imageMap.set(
+                    entry.id,
+                    await getReflectionImage("local", entry),
+                  );
+              select([{ backup, images: imageMap }]);
+            });
           }}
         >
           Use data saved in this browser
@@ -206,6 +216,43 @@ export function DataManager() {
                     "POST",
                     { backups, dryRun: false },
                   );
+                  if (images.size) {
+                    const expected = parseBackups(backups).entries;
+                    const current =
+                      await cloudRequest<
+                        import("@/features/reflections/model").Entry[]
+                      >("/api/reflections");
+                    const byId = new Map(
+                      current.map((entry) => [entry.id, entry]),
+                    );
+                    for (const entry of expected) {
+                      const blob = images.get(entry.id);
+                      const target = byId.get(entry.id);
+                      if (!blob || !target || target.imagePath) continue;
+                      if (
+                        target.kind !== entry.kind ||
+                        target.content !== entry.content
+                      )
+                        continue;
+                      const response = await fetch(
+                        `/api/reflections/${encodeURIComponent(entry.id)}/image`,
+                        {
+                          method: "POST",
+                          body: blob,
+                          headers: {
+                            "Content-Type": "image/webp",
+                            "X-Image-Caption": encodeURIComponent(
+                              entry.imageCaption ?? "",
+                            ),
+                          },
+                        },
+                      );
+                      if (!response.ok)
+                        throw new Error(
+                          `Could not restore the image for reflection ${entry.id}. Retry the import.`,
+                        );
+                    }
+                  }
                   setResult(imported);
                   setVerification(
                     await cloudRequest<Verification>(

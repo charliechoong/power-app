@@ -529,6 +529,53 @@
     min-height: 38px;
   }
 }
+.reflection-image-field {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.reflection-image-field label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.reflection-image-field label span {
+  font-weight: 400;
+  opacity: 0.65;
+}
+.reflection-image-field input[type="file"] {
+  max-width: 100%;
+}
+.reflection-image-field input[type="text"],
+.reflection-image-field label input {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+.reflection-image {
+  margin: 14px 0 0;
+}
+.reflection-image img {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 5px;
+  background: #edf0e8;
+}
+.reflection-image figcaption {
+  padding-top: 7px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+.image-unavailable {
+  font-size: 12px;
+  opacity: 0.7;
+}
 @media (max-width: 760px) {
   .search-box input,
   .attribution-field input {

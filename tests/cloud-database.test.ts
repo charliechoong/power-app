@@ -238,6 +238,60 @@ test("cloud schema preserves owner writes and opens content for public reading",
       /row-level security/,
     );
     await db.exec("reset role");
+    await db.exec(`
+      create schema storage;
+      create table storage.buckets (
+        id text primary key, name text not null, public boolean not null,
+        file_size_limit bigint, allowed_mime_types text[]
+      );
+      create table storage.objects (id text primary key, bucket_id text not null, name text not null);
+      alter table storage.objects enable row level security;
+      grant usage on schema storage to authenticated;
+      grant select, insert, delete on storage.objects to authenticated;
+      create function storage.foldername(path text) returns text[]
+        language sql immutable as $$ select string_to_array(path, '/') $$;
+      grant execute on function storage.foldername(text) to authenticated;
+    `);
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/202610010001_reflection_images.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    assert.equal(
+      (
+        await db.query<{ public: boolean }>(
+          "select public from storage.buckets where id='reflection-images'",
+        )
+      ).rows[0].public,
+      true,
+    );
+    await db.exec("set role authenticated");
+    await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
+      stranger,
+    ]);
+    await assert.rejects(
+      db.query(
+        "insert into storage.objects(id,bucket_id,name) values ('bad','reflection-images',$1)",
+        [`${owner}/bad.webp`],
+      ),
+      /row-level security/,
+    );
+    await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
+      owner,
+    ]);
+    await db.query(
+      "insert into storage.objects(id,bucket_id,name) values ('good','reflection-images',$1)",
+      [`${owner}/good.webp`],
+    );
+    assert.equal(
+      (await db.query("select * from storage.objects")).rows.length,
+      1,
+    );
+    await db.exec("reset role");
     await db.exec(
       await readFile(
         new URL(

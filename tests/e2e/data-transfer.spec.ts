@@ -42,7 +42,9 @@ test("complete backup includes both domains and notes without changing browser d
     .getByRole("button", { name: "Use data saved in this browser" })
     .click();
   await expect(
-    page.getByText("1 reflections/quotes, 1 books, 1 notes, 0 gratitude entries."),
+    page.getByText(
+      "1 reflections/quotes, 0 images, 1 books, 1 notes, 0 gratitude entries.",
+    ),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Preview cloud import" }),

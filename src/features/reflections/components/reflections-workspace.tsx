@@ -14,7 +14,11 @@ import { STORAGE_PREFIX } from "../local-repository";
 import {
   useReflectionsRepository,
   exportReflections,
+  saveReflectionImage,
+  removeReflectionImage,
+  getReflectionImage,
 } from "../client-repository";
+import { prepareImage } from "../image-storage";
 import { useStorageMode } from "@/lib/storage-mode";
 import { useCanEdit } from "@/lib/edit-access";
 
@@ -30,6 +34,9 @@ export function ReflectionsWorkspace() {
   const [kind, setKind] = useState<EntryKind>("reflection");
   const [content, setContent] = useState("");
   const [attribution, setAttribution] = useState("");
+  const [imageCaption, setImageCaption] = useState("");
+  const [imageFile, setImageFile] = useState<File>();
+  const [removeImage, setRemoveImage] = useState(false);
   const [editing, setEditing] = useState<Entry>();
   const [filter, setFilter] = useState<EntryKind | "all">("all");
   const [query, setQuery] = useState("");
@@ -91,6 +98,9 @@ export function ReflectionsWorkspace() {
   const reset = () => {
     setContent("");
     setAttribution("");
+    setImageCaption("");
+    setImageFile(undefined);
+    setRemoveImage(false);
     setEditing(undefined);
     setError("");
   };
@@ -106,10 +116,32 @@ export function ReflectionsWorkspace() {
     setError("");
     setStatus("");
     try {
-      const entry = await localRepository.save(
-        { kind, content, attribution },
+      let entry = await localRepository.save(
+        {
+          kind,
+          content,
+          attribution,
+          imageCaption: removeImage || (!imageFile && !editing?.imagePath) ? "" : imageCaption,
+        },
         editing,
       );
+      try {
+        if (imageFile && kind === "reflection")
+          entry = await saveReflectionImage(
+            mode,
+            entry,
+            await prepareImage(imageFile),
+          );
+        else if (removeImage && entry.imagePath)
+          entry = await removeReflectionImage(mode, entry);
+      } catch (reason) {
+        setEditing(entry);
+        setEntries((previous) => [
+          ...previous.filter((item) => item.id !== entry.id),
+          entry,
+        ]);
+        throw reason;
+      }
       setEntries((previous) =>
         [...previous.filter((item) => item.id !== entry.id), entry].sort(
           (a, b) =>
@@ -126,9 +158,9 @@ export function ReflectionsWorkspace() {
             : "Saved on this device. A thought worth keeping.",
       );
       textarea.current?.focus();
-    } catch {
+    } catch (reason) {
       setError(
-        "Couldn’t save this entry. Your text is still here. Check your connection or storage and try again.",
+        `Couldn’t save this entry or image. ${reason instanceof Error ? reason.message : "Your text is still here; try again."}`,
       );
     } finally {
       busyRef.current = false;
@@ -165,6 +197,9 @@ export function ReflectionsWorkspace() {
     setKind(entry.kind);
     setContent(entry.content);
     setAttribution(entry.attribution);
+    setImageCaption(entry.imageCaption ?? "");
+    setImageFile(undefined);
+    setRemoveImage(false);
     setError("");
     setStatus("");
     focusCapture();
@@ -207,7 +242,7 @@ export function ReflectionsWorkspace() {
                 aria-pressed={kind === "reflection"}
                 className={kind === "reflection" ? "selected" : ""}
                 onClick={() => setKind("reflection")}
-                disabled={busy}
+                disabled={busy || !!editing}
               >
                 <Icon name="book" size={16} /> Reflection
               </button>
@@ -215,7 +250,7 @@ export function ReflectionsWorkspace() {
                 aria-pressed={kind === "quote"}
                 className={kind === "quote" ? "selected" : ""}
                 onClick={() => setKind("quote")}
-                disabled={busy}
+                disabled={busy || !!editing}
               >
                 <Icon name="quote" size={16} /> Quote
               </button>
@@ -268,6 +303,48 @@ export function ReflectionsWorkspace() {
                   disabled={busy}
                   onChange={(event) => setAttribution(event.target.value)}
                 />
+              </div>
+            )}
+            {kind === "reflection" && (
+              <div className="reflection-image-field">
+                <label htmlFor="reflection-image">
+                  Image <span>(optional, one per reflection)</span>
+                </label>
+                <input
+                  id="reflection-image"
+                  type="file"
+                  accept="image/*"
+                  disabled={busy}
+                  onChange={(event) => {
+                    setImageFile(event.target.files?.[0]);
+                    setRemoveImage(false);
+                  }}
+                />
+                {editing?.imagePath && !imageFile && !removeImage && (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setRemoveImage(true)}
+                  >
+                    Remove existing image
+                  </button>
+                )}
+                {removeImage && (
+                  <span>Image will be removed when you save.</span>
+                )}
+                {(imageFile || (editing?.imagePath && !removeImage)) && (
+                  <label htmlFor="image-caption">
+                    Caption <span>(optional)</span>
+                    <input
+                      id="image-caption"
+                      value={imageCaption}
+                      maxLength={300}
+                      disabled={busy}
+                      onChange={(event) => setImageCaption(event.target.value)}
+                      placeholder="A few words about this image"
+                    />
+                  </label>
+                )}
               </div>
             )}
             <div className="composer-footer">
@@ -451,7 +528,12 @@ export function ReflectionsWorkspace() {
                     )}
                   </blockquote>
                 ) : (
-                  <p className="entry-content">{entry.content}</p>
+                  <>
+                    <p className="entry-content">{entry.content}</p>
+                    {entry.imagePath && (
+                      <ReflectionImage entry={entry} mode={mode} />
+                    )}
+                  </>
                 )}
                 <div className="entry-bottom">
                   <span>
@@ -523,5 +605,51 @@ export function ReflectionsWorkspace() {
         </span>
       </footer>
     </div>
+  );
+}
+
+function ReflectionImage({
+  entry,
+  mode,
+}: {
+  entry: Entry;
+  mode: "local" | "cloud";
+}) {
+  const [localUrl, setLocalUrl] = useState("");
+  useEffect(() => {
+    if (mode !== "local") return;
+    let url = "";
+    let active = true;
+    getReflectionImage(mode, entry)
+      .then((blob) => {
+        if (!active) return;
+        url = URL.createObjectURL(blob);
+        setLocalUrl(url);
+      })
+      .catch(() => setLocalUrl(""));
+    return () => {
+      active = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [mode, entry]);
+  const src =
+    mode === "cloud"
+      ? `/api/reflections/${encodeURIComponent(entry.id)}/image?v=${encodeURIComponent(entry.imagePath ?? "")}`
+      : localUrl;
+  if (!src)
+    return (
+      <p className="image-unavailable">Image unavailable on this device.</p>
+    );
+  return (
+    <figure className="reflection-image">
+      {/* The image may be stored in browser storage or redirected to Supabase Storage. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={entry.imageCaption || "Image attached to reflection"}
+        loading="lazy"
+      />
+      {entry.imageCaption && <figcaption>{entry.imageCaption}</figcaption>}
+    </figure>
   );
 }

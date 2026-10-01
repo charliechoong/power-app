@@ -4,7 +4,7 @@ import type { OwnerContext } from "@/lib/server/http";
 import { AccessError } from "@/lib/server/auth";
 
 const fields =
-  "id,kind,content,attribution,createdAt:created_at,updatedAt:updated_at";
+  "id,kind,content,attribution,imagePath:image_path,imageCaption:image_caption,createdAt:created_at,updatedAt:updated_at";
 export function reflectionsServer({ db, owner }: OwnerContext) {
   return {
     async list() {
@@ -28,11 +28,20 @@ export function reflectionsServer({ db, owner }: OwnerContext) {
       const query = id
         ? db
             .from("reflections")
-            .update({ ...clean, updated_at: now })
+            .update({
+              kind: clean.kind,
+              content: clean.content,
+              attribution: clean.attribution,
+              image_caption: clean.imageCaption ?? "",
+              updated_at: now,
+            })
             .eq("owner_id", owner)
             .eq("id", id)
         : db.from("reflections").insert({
-            ...clean,
+            kind: clean.kind,
+            content: clean.content,
+            attribution: clean.attribution,
+            image_caption: clean.imageCaption ?? "",
             id: crypto.randomUUID(),
             owner_id: owner,
             created_at: now,
@@ -44,12 +53,23 @@ export function reflectionsServer({ db, owner }: OwnerContext) {
       return parseEntry(data);
     },
     async remove(id: string) {
+      const previous = await db
+        .from("reflections")
+        .select("image_path")
+        .eq("owner_id", owner)
+        .eq("id", id)
+        .maybeSingle();
+      if (previous.error) throw previous.error;
       const { error } = await db
         .from("reflections")
         .delete()
         .eq("owner_id", owner)
         .eq("id", id);
       if (error) throw error;
+      if (previous.data?.image_path)
+        await db.storage
+          .from("reflection-images")
+          .remove([previous.data.image_path]);
     },
   };
 }

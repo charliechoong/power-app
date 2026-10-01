@@ -35,8 +35,10 @@ function idCheck(id: string) {
 function normalizedEntry(value: unknown) {
   const entry = parseEntry(value);
   idCheck(entry.id);
+  const { imagePath, ...record } = entry;
   return {
-    ...entry,
+    ...record,
+    ...(imagePath ? { imagePath: "attached" } : {}),
     createdAt: new Date(entry.createdAt).toISOString(),
     updatedAt: new Date(entry.updatedAt).toISOString(),
   };
