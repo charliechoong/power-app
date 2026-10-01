@@ -52,8 +52,15 @@ export default function HomePage() {
           <Icon name="quote" size={33} />
         </div>
         <blockquote>{quote.text}</blockquote>
+        <aside
+          className="daily-reflection-prompt"
+          aria-label="Reflection prompt"
+        >
+          <p className="eyebrow">A QUESTION TO SIT WITH</p>
+          <p>{quote.prompt}</p>
+        </aside>
         <div className="daily-quote-footline">
-          <span>A thought for the day ahead</span>
+          <span>Original words for the day ahead</span>
           <span>Changes daily · Singapore time</span>
         </div>
       </section>

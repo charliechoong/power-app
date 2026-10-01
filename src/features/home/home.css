@@ -91,12 +91,36 @@
   position: relative;
   z-index: 1;
   max-width: 850px;
-  margin: 0 0 48px;
+  margin: 0 0 38px;
   color: #304a37;
   font:
     400 clamp(29px, 4vw, 47px) / 1.25 Georgia,
     serif;
   letter-spacing: -0.9px;
+}
+
+.daily-reflection-prompt {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  margin-bottom: 42px;
+  padding: 21px 24px;
+  border-left: 3px solid #8da58a;
+  border-radius: 0 8px 8px 0;
+  background: #ffffff7a;
+}
+
+.daily-reflection-prompt .eyebrow {
+  margin: 0 0 9px;
+  color: #617a61;
+}
+
+.daily-reflection-prompt p:last-child {
+  margin: 0;
+  color: #3c5540;
+  font:
+    400 clamp(18px, 2vw, 21px) / 1.45 Georgia,
+    serif;
 }
 
 .daily-quote-footline {
@@ -227,7 +251,11 @@
     margin-top: 32px;
   }
   .daily-quote blockquote {
-    margin-bottom: 42px;
+    margin-bottom: 30px;
+  }
+  .daily-reflection-prompt {
+    margin-bottom: 34px;
+    padding: 18px 19px;
   }
   .home-collections {
     margin-top: 48px;
