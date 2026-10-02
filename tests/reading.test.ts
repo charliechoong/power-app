@@ -6,8 +6,10 @@ import {
   filterBooks,
   parseBook,
   validateNote,
+  validateReadingOrder,
   type BookInput,
 } from "../src/features/reading/model";
+import { layoutReadingMap } from "../src/features/reading/map-layout";
 import {
   createReadingRepository,
   READING_STORAGE_PREFIX,
@@ -219,4 +221,36 @@ test("a failed note write leaves the previous saved notes intact", async () => {
     (await repo.get(book.id))?.notes.map((note) => note.content),
     ["Saved note"],
   );
+});
+
+test("suggested reading order supports multiple earlier books without blocking progress", async () => {
+  const storage = memoryStorage();
+  const repo = createReadingRepository(() => storage);
+  const first = await repo.save({ ...draft, title: "Book A" });
+  const second = await repo.save({ ...draft, title: "Book B" });
+  const third = await repo.save({ ...draft, title: "Book C" });
+  const linked = await repo.save(
+    { ...third, prerequisiteIds: [first.id, second.id] },
+    third,
+  );
+  assert.deepEqual(linked.prerequisiteIds, [first.id, second.id]);
+  const map = layoutReadingMap(await repo.list());
+  assert.equal(map.edges.length, 2);
+  assert.ok(
+    map.nodes.find((node) => node.book.id === third.id)!.x >
+      map.nodes.find((node) => node.book.id === first.id)!.x,
+  );
+  const started = await repo.save({ ...linked, status: "reading" }, linked);
+  assert.equal(started.status, "reading");
+  assert.deepEqual(started.prerequisiteIds, [first.id, second.id]);
+  await assert.rejects(
+    repo.save({ ...first, prerequisiteIds: [third.id] }, first),
+    /loop/,
+  );
+  assert.throws(
+    () => validateReadingOrder([first, second, linked], first.id, [first.id]),
+    /itself/,
+  );
+  await repo.remove(first.id);
+  assert.deepEqual((await repo.get(third.id))?.prerequisiteIds, [second.id]);
 });

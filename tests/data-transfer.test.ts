@@ -27,6 +27,7 @@ const source: ImportData = {
       status: "reading",
       currentPage: 10,
       totalPages: 100,
+      prerequisiteIds: [],
       createdAt: date,
       updatedAt: date,
       notes: [

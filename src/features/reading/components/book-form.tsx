@@ -49,6 +49,7 @@ export function BookForm({
             status,
             currentPage: page === "" ? 0 : Number(page),
             totalPages: total === "" ? null : Number(total),
+            prerequisiteIds: book?.prerequisiteIds ?? [],
           });
         } catch (reason) {
           setError(

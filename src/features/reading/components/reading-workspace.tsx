@@ -16,6 +16,7 @@ import { useStorageMode } from "@/lib/storage-mode";
 import { useCanEdit } from "@/lib/edit-access";
 import { BookForm } from "./book-form";
 import { BookCard } from "./book-card";
+import { ReadingMap } from "./reading-map";
 import "./reading.css";
 
 export function ReadingWorkspace() {
@@ -111,7 +112,16 @@ export function ReadingWorkspace() {
     setMessage("");
     try {
       await readingRepository.remove(id);
-      setBooks((previous) => previous.filter((book) => book.id !== id));
+      setBooks((previous) =>
+        previous
+          .filter((book) => book.id !== id)
+          .map((book) => ({
+            ...book,
+            prerequisiteIds: book.prerequisiteIds.filter(
+              (value) => value !== id,
+            ),
+          })),
+      );
       setMessage("Book deleted.");
     } finally {
       busyRef.current = false;
@@ -159,6 +169,14 @@ export function ReadingWorkspace() {
             Retry loading
           </button>
         </div>
+      )}
+      {ready && (
+        <ReadingMap
+          books={books}
+          canEdit={canEdit}
+          disabled={busy}
+          onSave={save}
+        />
       )}
       <section aria-labelledby="reading-shelf-heading">
         <div className="reading-shelf-heading">

@@ -1,5 +1,31 @@
 import { test, expect } from "@playwright/test";
 
+test("map connects suggested earlier books and still allows starting the next book", async ({
+  page,
+}) => {
+  await page.goto("/reading");
+  for (const title of ["Book A", "Book B", "Book C"]) {
+    await page.getByLabel("Book title").fill(title);
+    await page.getByRole("button", { name: "Add book", exact: true }).click();
+  }
+  const map = page.getByRole("region", { name: "Reading map" });
+  await map
+    .getByRole("button", { name: "Set reading order for Book C" })
+    .click();
+  const editor = page.getByRole("form", { name: "Reading order for Book C" });
+  await editor.getByRole("checkbox", { name: /Book A/ }).check();
+  await editor.getByRole("checkbox", { name: /Book B/ }).check();
+  await editor.getByRole("button", { name: "Save reading order" }).click();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(2);
+  await expect(map.getByText("0/2 earlier books finished")).toBeVisible();
+  const next = page.getByRole("article", { name: "Book C" });
+  await next.getByRole("button", { name: "Start reading" }).click();
+  await expect(next).toContainText("Reading");
+  await page.reload();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(2);
+  await expect(map.getByText("0/2 earlier books finished")).toBeVisible();
+});
+
 test("add a book, track pages, finish, reopen, filter, export and delete", async ({
   page,
 }) => {

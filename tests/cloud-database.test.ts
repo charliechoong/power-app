@@ -149,6 +149,15 @@ test("cloud schema preserves owner writes and opens content for public reading",
         "utf8",
       ),
     );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261002141318_reading_order.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     assert.equal(
       (
         await db.query<{ title: string }>(
@@ -494,7 +503,41 @@ test("cloud schema preserves owner writes and opens content for public reading",
     await db.query("select set_config('request.jwt.claim.sub', $1, false)", [
       owner,
     ]);
+    const linked = {
+      entries: [],
+      books: [
+        {
+          ...payload.books[0],
+          id: "b2",
+          title: "Next book",
+          prerequisiteIds: ["b1"],
+          notes: [],
+        },
+      ],
+      gratitudes: [],
+      plans: [],
+      subscriptions: [],
+    };
+    await db.query("select public.import_personal_data($1::jsonb, false)", [
+      JSON.stringify(linked),
+    ]);
+    assert.deepEqual(
+      (
+        await db.query<{ prerequisite_ids: string[] }>(
+          "select prerequisite_ids from public.reading_books where id='b2'",
+        )
+      ).rows[0].prerequisite_ids,
+      ["b1"],
+    );
     await db.query("delete from public.reading_books where id='b1'");
+    assert.deepEqual(
+      (
+        await db.query<{ prerequisite_ids: string[] }>(
+          "select prerequisite_ids from public.reading_books where id='b2'",
+        )
+      ).rows[0].prerequisite_ids,
+      [],
+    );
     assert.equal(
       (await db.query("select * from public.reading_notes")).rows.length,
       0,

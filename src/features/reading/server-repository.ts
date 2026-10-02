@@ -1,10 +1,16 @@
 import "server-only";
-import { parseBook, validateBook, validateNote, type BookInput } from "./model";
+import {
+  parseBook,
+  validateBook,
+  validateNote,
+  validateReadingOrder,
+  type BookInput,
+} from "./model";
 import type { OwnerContext } from "@/lib/server/http";
 import { AccessError } from "@/lib/server/auth";
 
 const fields =
-  "id,title,author,status,currentPage:current_page,totalPages:total_pages,createdAt:created_at,updatedAt:updated_at";
+  "id,title,author,status,currentPage:current_page,totalPages:total_pages,prerequisiteIds:prerequisite_ids,createdAt:created_at,updatedAt:updated_at";
 function parse(value: unknown) {
   const book = parseBook(value);
   book.notes.sort(
@@ -68,6 +74,15 @@ export function readingServer({ db, owner }: OwnerContext) {
     },
     async save(input: BookInput, id?: string) {
       const book = validateBook(input);
+      const bookId = id ?? crypto.randomUUID();
+      if (book.prerequisiteIds.length) {
+        const { data: order, error: orderError } = await db
+          .from("reading_books")
+          .select("id,prerequisiteIds:prerequisite_ids")
+          .eq("owner_id", owner);
+        if (orderError) throw orderError;
+        validateReadingOrder(order, bookId, book.prerequisiteIds);
+      }
       const now = new Date().toISOString();
       const record = {
         title: book.title,
@@ -75,6 +90,7 @@ export function readingServer({ db, owner }: OwnerContext) {
         status: book.status,
         current_page: book.currentPage,
         total_pages: book.totalPages,
+        prerequisite_ids: book.prerequisiteIds,
         updated_at: now,
       };
       const query = id
@@ -85,7 +101,7 @@ export function readingServer({ db, owner }: OwnerContext) {
             .eq("id", id)
         : db.from("reading_books").insert({
             ...record,
-            id: crypto.randomUUID(),
+            id: bookId,
             owner_id: owner,
             created_at: now,
           });

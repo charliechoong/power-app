@@ -11,8 +11,10 @@ export type BookInput = {
   status: BookStatus;
   currentPage: number;
   totalPages: number | null;
+  prerequisiteIds?: string[];
 };
-export type Book = BookInput & {
+export type Book = Omit<BookInput, "prerequisiteIds"> & {
+  prerequisiteIds: string[];
   id: string;
   createdAt: string;
   updatedAt: string;
@@ -55,7 +57,9 @@ function parseNote(value: unknown): BookNote {
   };
 }
 
-export function validateBook(input: BookInput): BookInput {
+export function validateBook(
+  input: BookInput,
+): BookInput & { prerequisiteIds: string[] } {
   if (typeof input.title !== "string" || !input.title.trim())
     throw new Error("Give your book a title.");
   if (input.title.trim().length > 300)
@@ -75,6 +79,16 @@ export function validateBook(input: BookInput): BookInput {
     );
   if (input.totalPages !== null && input.currentPage > input.totalPages)
     throw new Error("Current page can’t exceed the total pages.");
+  const prerequisiteIds = input.prerequisiteIds ?? [];
+  if (
+    !Array.isArray(prerequisiteIds) ||
+    prerequisiteIds.length > 30 ||
+    prerequisiteIds.some(
+      (id) => typeof id !== "string" || !id || id.length > 200,
+    ) ||
+    new Set(prerequisiteIds).size !== prerequisiteIds.length
+  )
+    throw new Error("Choose up to 30 different books to read first.");
   let { status, currentPage } = input;
   if (status === "finished" && input.totalPages !== null)
     currentPage = input.totalPages;
@@ -87,7 +101,35 @@ export function validateBook(input: BookInput): BookInput {
     status,
     currentPage,
     totalPages: input.totalPages,
+    prerequisiteIds,
   };
+}
+
+export function validateReadingOrder(
+  books: Pick<Book, "id" | "prerequisiteIds">[],
+  bookId: string,
+  prerequisiteIds: string[],
+) {
+  const byId = new Map(books.map((book) => [book.id, book]));
+  for (const prerequisiteId of prerequisiteIds) {
+    if (prerequisiteId === bookId)
+      throw new Error("A book cannot come before itself.");
+    if (!byId.has(prerequisiteId))
+      throw new Error(
+        "A suggested earlier book no longer exists. Refresh and try again.",
+      );
+    const seen = new Set<string>();
+    const visit = (id: string): boolean => {
+      if (id === bookId) return true;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return (byId.get(id)?.prerequisiteIds ?? []).some(visit);
+    };
+    if (visit(prerequisiteId))
+      throw new Error(
+        "That order would create a loop. Choose a different book.",
+      );
+  }
 }
 
 export function parseBook(value: unknown): Book {

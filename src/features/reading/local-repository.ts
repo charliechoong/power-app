@@ -1,4 +1,10 @@
-import { parseBook, validateBook, validateNote, type Book } from "./model";
+import {
+  parseBook,
+  validateBook,
+  validateNote,
+  validateReadingOrder,
+  type Book,
+} from "./model";
 import type { ReadingRepository } from "./repository";
 
 export const READING_STORAGE_PREFIX = "personal-hub:reading:v1:";
@@ -22,7 +28,7 @@ export function createReadingRepository(
     storage.setItem(READING_STORAGE_PREFIX + book.id, JSON.stringify(book));
     return book;
   }
-  return {
+  const repository: ReadingRepository = {
     async get(id) {
       return read(getStorage(), id);
     },
@@ -56,10 +62,17 @@ export function createReadingRepository(
       const storage = getStorage();
       // Read the latest record so editing progress cannot overwrite newly added notes.
       const current = existing ? requireBook(storage, existing.id) : undefined;
+      const bookId = existing?.id ?? crypto.randomUUID();
+      if (clean.prerequisiteIds.length)
+        validateReadingOrder(
+          await repository.list(),
+          bookId,
+          clean.prerequisiteIds,
+        );
       const now = new Date().toISOString();
       const book: Book = {
         ...clean,
-        id: existing?.id ?? crypto.randomUUID(),
+        id: bookId,
         createdAt: current?.createdAt ?? now,
         updatedAt: now,
         notes: current?.notes ?? [],
@@ -67,7 +80,17 @@ export function createReadingRepository(
       return write(storage, book);
     },
     async remove(id) {
-      getStorage().removeItem(READING_STORAGE_PREFIX + id);
+      const storage = getStorage();
+      const dependents = (await repository.list()).filter((book) =>
+        book.prerequisiteIds.includes(id),
+      );
+      for (const book of dependents)
+        write(storage, {
+          ...book,
+          prerequisiteIds: book.prerequisiteIds.filter((value) => value !== id),
+          updatedAt: new Date().toISOString(),
+        });
+      storage.removeItem(READING_STORAGE_PREFIX + id);
     },
     async saveNote(bookId, content, noteId) {
       const clean = validateNote(content);
@@ -102,6 +125,7 @@ export function createReadingRepository(
       });
     },
   };
+  return repository;
 }
 
 export const readingRepository = createReadingRepository(
