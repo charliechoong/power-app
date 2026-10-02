@@ -103,9 +103,10 @@ button:hover:not(:disabled) {
 .brand-mark {
   margin-right: 10px;
   display: flex;
+  color: #22c55e;
 }
 .brand-dot {
-  color: #8a9c79;
+  color: #22c55e;
 }
 .sidebar-body {
   padding: 29px 17px;
