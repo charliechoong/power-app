@@ -240,6 +240,14 @@ test("suggested reading order supports multiple earlier books without blocking p
     map.nodes.find((node) => node.book.id === third.id)!.x >
       map.nodes.find((node) => node.book.id === first.id)!.x,
   );
+  const narrowMap = layoutReadingMap(await repo.list(), 320);
+  assert.equal(narrowMap.width, 320);
+  assert.equal(narrowMap.edges.length, 2);
+  assert.ok(narrowMap.nodes.every((node) => node.x === narrowMap.nodes[0].x));
+  assert.ok(
+    narrowMap.nodes.find((node) => node.book.id === third.id)!.y >
+      narrowMap.nodes.find((node) => node.book.id === second.id)!.y,
+  );
   const started = await repo.save({ ...linked, status: "reading" }, linked);
   assert.equal(started.status, "reading");
   assert.deepEqual(started.prerequisiteIds, [first.id, second.id]);

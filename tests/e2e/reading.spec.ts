@@ -1,5 +1,87 @@
 import { test, expect } from "@playwright/test";
 
+test("dragging books creates a suggested connection without an inner scroll area", async ({
+  page,
+}) => {
+  await page.goto("/reading");
+  for (const title of ["Book A", "Book C"]) {
+    await page.getByLabel("Book title").fill(title);
+    await page.getByRole("button", { name: "Add book", exact: true }).click();
+  }
+  const map = page.locator(".reading-map-frame");
+  const source = map.locator("[data-reading-book-id]", { hasText: "Book C" });
+  const target = map.locator("[data-reading-book-id]", { hasText: "Book A" });
+  await source.scrollIntoViewIfNeeded();
+  const from = await source.locator(".reading-map-drag-handle").boundingBox();
+  const to = await target.boundingBox();
+  if (!from || !to) throw new Error("Book positions unavailable");
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
+  await expect(map.getByText("0/1 earlier books finished")).toBeVisible();
+  expect(await map.evaluate((node) => getComputedStyle(node).overflowY)).toBe(
+    "visible",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.reload();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
+});
+
+test("touch dragging from the handle connects books", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "mobile",
+    "Touch gesture applies to the mobile layout",
+  );
+  await page.goto("/reading");
+  for (const title of ["Book A", "Book C"]) {
+    await page.getByLabel("Book title").fill(title);
+    await page.getByRole("button", { name: "Add book", exact: true }).click();
+  }
+  const map = page.locator(".reading-map-frame");
+  const source = map.locator("[data-reading-book-id]", { hasText: "Book C" });
+  const target = map.locator("[data-reading-book-id]", { hasText: "Book A" });
+  await source.scrollIntoViewIfNeeded();
+  const from = await source.locator(".reading-map-drag-handle").boundingBox();
+  const to = await target.boundingBox();
+  if (!from || !to) throw new Error("Book positions unavailable");
+  const x1 = from.x + from.width / 2;
+  const y1 = from.y + from.height / 2;
+  const x2 = to.x + to.width / 2;
+  const y2 = to.y + to.height / 2;
+  const session = await page.context().newCDPSession(page);
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: x1, y: y1, id: 1 }],
+  });
+  for (let step = 1; step <= 8; step++) {
+    await session.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [
+        {
+          x: x1 + ((x2 - x1) * step) / 8,
+          y: y1 + ((y2 - y1) * step) / 8,
+          id: 1,
+        },
+      ],
+    });
+  }
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
+});
+
 test("map connects suggested earlier books and still allows starting the next book", async ({
   page,
 }) => {
@@ -8,7 +90,7 @@ test("map connects suggested earlier books and still allows starting the next bo
     await page.getByLabel("Book title").fill(title);
     await page.getByRole("button", { name: "Add book", exact: true }).click();
   }
-  const map = page.getByRole("region", { name: "Reading map" });
+  const map = page.locator(".reading-map-frame");
   await map
     .getByRole("button", { name: "Set reading order for Book C" })
     .click();

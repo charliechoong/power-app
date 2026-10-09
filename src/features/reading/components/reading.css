@@ -166,19 +166,12 @@
   padding: 7px 10px;
   border-radius: 20px;
 }
-.reading-map-scroll {
+.reading-map-frame {
   width: 100%;
-  max-height: 550px;
-  overflow: auto;
-  overscroll-behavior: contain;
   border-block: 1px solid #e6ecdd;
   background-color: #f5f8ef;
   background-image: radial-gradient(#d6e2ce 0.8px, transparent 0.8px);
   background-size: 20px 20px;
-}
-.reading-map-scroll:focus-visible {
-  outline: 2px solid #658270;
-  outline-offset: -3px;
 }
 .reading-map-canvas {
   position: relative;
@@ -199,6 +192,12 @@
   stroke: #708e61;
   stroke-dasharray: none;
 }
+.reading-map-preview-edge {
+  fill: none;
+  stroke: #597950;
+  stroke-width: 2;
+  stroke-dasharray: 5 4;
+}
 .reading-map-node {
   position: absolute;
   display: flex;
@@ -210,6 +209,35 @@
   background: white;
   box-shadow: 0 5px 15px #435d3210;
   overflow: hidden;
+}
+.reading-map-node.is-dragging {
+  opacity: 0.65;
+  border-color: #77946b;
+}
+.reading-map-node.is-drop-target {
+  border-color: #4d8047;
+  box-shadow: 0 0 0 3px #86ae733d;
+}
+.reading-map-node-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+}
+.reading-map-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 5px;
+  margin: -4px -5px -4px 0;
+  color: #52734b;
+  font-size: 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.reading-map-drag-handle:active {
+  cursor: grabbing;
 }
 .reading-map-node-finished {
   background: #ecf4e7;
@@ -270,11 +298,11 @@
   opacity: 0.5;
   cursor: default;
 }
-.reading-map-hint {
+.reading-map-drop-feedback {
   margin: 0;
   padding: 8px 24px;
-  font-size: 10px;
-  color: #748267;
+  font-size: 11px;
+  color: #426440;
 }
 .reading-map-editor {
   border-top: 1px solid #dce4d2;
@@ -681,9 +709,6 @@
   }
   .reading-map-heading h2 {
     font-size: 22px;
-  }
-  .reading-map-scroll {
-    max-height: 480px;
   }
   .reading-map-editor {
     padding: 18px;

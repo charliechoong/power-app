@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
 import {
@@ -13,8 +13,21 @@ import {
 import {
   layoutReadingMap,
   MAP_NODE_HEIGHT,
-  MAP_NODE_WIDTH,
+  readingMapEdgePath,
 } from "../map-layout";
+
+type Drag = {
+  sourceId: string;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  clientX: number;
+  clientY: number;
+  x: number;
+  y: number;
+  targetId: string | null;
+  moved: boolean;
+};
 
 export function ReadingMap({
   books,
@@ -31,10 +44,136 @@ export function ReadingMap({
   const [draft, setDraft] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [width, setWidth] = useState(760);
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const [feedback, setFeedback] = useState("");
+  const frameRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<Drag | null>(null);
   const selected = books.find((book) => book.id === selectedId);
-  const map = layoutReadingMap(books);
+  const map = useMemo(() => layoutReadingMap(books, width), [books, width]);
+  const hasBooks = books.length > 0;
 
-  if (!books.length) return null;
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const updateWidth = () => setWidth(frame.clientWidth);
+    updateWidth();
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [hasBooks]);
+
+  useEffect(() => {
+    if (!drag?.moved) return;
+    let animationFrame: number;
+    const scrollPage = () => {
+      const current = dragRef.current;
+      if (!current?.moved) return;
+      const edge = 76;
+      const speed =
+        current.clientY < edge
+          ? -Math.min(14, (edge - current.clientY) / 5)
+          : current.clientY > window.innerHeight - edge
+            ? Math.min(14, (current.clientY - window.innerHeight + edge) / 5)
+            : 0;
+      if (speed) {
+        window.scrollBy(0, speed);
+        updateDrag(current.clientX, current.clientY);
+      }
+      animationFrame = window.requestAnimationFrame(scrollPage);
+    };
+    animationFrame = window.requestAnimationFrame(scrollPage);
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [drag?.moved]);
+
+  function updateDrag(clientX: number, clientY: number) {
+    const current = dragRef.current;
+    const canvas = canvasRef.current;
+    if (!current || !canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const target = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>("[data-reading-book-id]");
+    const next: Drag = {
+      ...current,
+      clientX,
+      clientY,
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+      targetId: target?.dataset.readingBookId ?? null,
+      moved:
+        current.moved ||
+        Math.hypot(clientX - current.startX, clientY - current.startY) > 6,
+    };
+    dragRef.current = next;
+    setDrag(next);
+  }
+
+  function startDrag(event: PointerEvent<HTMLDivElement>, book: Book) {
+    if (!canEdit || disabled || saving || dragRef.current) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("a, button")) return;
+    if (
+      event.pointerType === "touch" &&
+      !target.closest(".reading-map-drag-handle")
+    )
+      return;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const next: Drag = {
+      sourceId: book.id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+      targetId: null,
+      moved: false,
+    };
+    dragRef.current = next;
+    setDrag(next);
+    setFeedback("");
+  }
+
+  async function finishDrag(event: PointerEvent<HTMLDivElement>) {
+    const current = dragRef.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    updateDrag(event.clientX, event.clientY);
+    const finished = dragRef.current;
+    dragRef.current = null;
+    setDrag(null);
+    if (
+      !finished?.moved ||
+      !finished.targetId ||
+      finished.targetId === finished.sourceId
+    )
+      return;
+    const target = books.find((book) => book.id === finished.targetId);
+    const source = books.find((book) => book.id === finished.sourceId);
+    if (!target || !source || target.prerequisiteIds.includes(source.id))
+      return;
+    const prerequisiteIds = [...target.prerequisiteIds, source.id];
+    try {
+      validateReadingOrder(books, target.id, prerequisiteIds);
+      setSaving(true);
+      await onSave({ ...target, prerequisiteIds }, target);
+      setFeedback(`${source.title} is now suggested before ${target.title}.`);
+    } catch (reason) {
+      setFeedback(
+        reason instanceof Error
+          ? reason.message
+          : "Couldn’t save this connection.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!hasBooks) return null;
 
   return (
     <section
@@ -48,6 +187,7 @@ export function ReadingMap({
           <p>
             Arrows mean “read first.” This is a suggested order; you can start
             any book whenever you like.
+            {canEdit && " Drag one book onto another to connect them."}
           </p>
         </div>
         <span className="reading-map-count">
@@ -55,13 +195,9 @@ export function ReadingMap({
           {map.edges.length === 1 ? "connection" : "connections"}
         </span>
       </div>
-      <div
-        className="reading-map-scroll"
-        role="region"
-        aria-label="Reading map"
-        tabIndex={0}
-      >
+      <div ref={frameRef} className="reading-map-frame">
         <div
+          ref={canvasRef}
           className="reading-map-canvas"
           style={{ width: map.width, height: map.height }}
         >
@@ -84,15 +220,10 @@ export function ReadingMap({
               </marker>
             </defs>
             {map.edges.map(({ source, target }) => {
-              const x1 = source.x + MAP_NODE_WIDTH + 3;
-              const y1 = source.y + MAP_NODE_HEIGHT / 2;
-              const x2 = target.x - 10;
-              const y2 = target.y + MAP_NODE_HEIGHT / 2;
-              const bend = Math.max(28, (x2 - x1) / 2);
               return (
                 <path
                   key={`${source.book.id}-${target.book.id}`}
-                  d={`M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`}
+                  d={readingMapEdgePath(source, target, map.nodeWidth)}
                   className={
                     source.book.status === "finished"
                       ? "reading-map-edge done"
@@ -102,6 +233,21 @@ export function ReadingMap({
                 />
               );
             })}
+            {drag?.moved &&
+              (() => {
+                const source = map.nodes.find(
+                  (node) => node.book.id === drag.sourceId,
+                );
+                if (!source) return null;
+                const x1 = source.x + map.nodeWidth / 2;
+                const y1 = source.y + MAP_NODE_HEIGHT / 2;
+                return (
+                  <path
+                    className="reading-map-preview-edge"
+                    d={`M ${x1} ${y1} L ${drag.x} ${drag.y}`}
+                  />
+                );
+              })()}
           </svg>
           {map.nodes.map(({ book, x, y }) => {
             const earlierBooks = book.prerequisiteIds.flatMap((id) => {
@@ -115,17 +261,39 @@ export function ReadingMap({
             return (
               <div
                 key={book.id}
-                className={`reading-map-node reading-map-node-${book.status}`}
+                data-reading-book-id={book.id}
+                className={`reading-map-node reading-map-node-${book.status}${drag?.moved && drag.sourceId === book.id ? " is-dragging" : ""}${drag?.moved && drag.targetId === book.id && drag.sourceId !== book.id ? " is-drop-target" : ""}`}
                 style={{
                   left: x,
                   top: y,
-                  width: MAP_NODE_WIDTH,
+                  width: map.nodeWidth,
                   height: MAP_NODE_HEIGHT,
                 }}
+                onPointerDown={(event) => startDrag(event, book)}
+                onPointerMove={(event) => {
+                  if (dragRef.current?.pointerId === event.pointerId) {
+                    updateDrag(event.clientX, event.clientY);
+                  }
+                }}
+                onPointerUp={finishDrag}
+                onPointerCancel={() => {
+                  dragRef.current = null;
+                  setDrag(null);
+                }}
               >
-                <span className="reading-map-node-status">
-                  {STATUS_LABELS[book.status]}
-                </span>
+                <div className="reading-map-node-top">
+                  <span className="reading-map-node-status">
+                    {STATUS_LABELS[book.status]}
+                  </span>
+                  {canEdit && (
+                    <span
+                      className="reading-map-drag-handle"
+                      title="Drag onto another book to connect"
+                    >
+                      <Icon name="move" size={12} /> Drag
+                    </span>
+                  )}
+                </div>
                 <Link
                   href={`/reading/${encodeURIComponent(book.id)}`}
                   title={`Open ${book.title}`}
@@ -165,9 +333,11 @@ export function ReadingMap({
           })}
         </div>
       </div>
-      <p className="reading-map-hint">
-        Scroll the map to explore all your books.
-      </p>
+      {feedback && (
+        <p className="reading-map-drop-feedback" role="status">
+          {feedback}
+        </p>
+      )}
       {canEdit && selected && (
         <form
           className="reading-map-editor"

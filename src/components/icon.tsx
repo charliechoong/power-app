@@ -14,7 +14,8 @@ type Name =
   | "device"
   | "heart"
   | "image"
-  | "list";
+  | "list"
+  | "move";
 const paths: Record<Name, React.ReactNode> = {
   home: (
     <>
@@ -70,6 +71,12 @@ const paths: Record<Name, React.ReactNode> = {
   list: (
     <>
       <path d="m4 6 2 2 3-3M4 14l2 2 3-3M12 7h9M12 15h9M4 21h17" />
+    </>
+  ),
+  move: (
+    <>
+      <path d="M12 2v20M2 12h20" />
+      <path d="m9 5 3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3" />
     </>
   ),
 };
