@@ -25,6 +25,11 @@
   margin: 14px 0 0;
   line-height: 1.7;
 }
+.reading-book-title {
+  color: #263c2b;
+  font-style: italic;
+  font-weight: 600;
+}
 .reading-capture {
   background: white;
   border: 1px solid #dce2d5;

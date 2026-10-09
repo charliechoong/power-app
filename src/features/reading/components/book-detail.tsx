@@ -10,6 +10,7 @@ import { useStorageMode } from "@/lib/storage-mode";
 import { useCanEdit } from "@/lib/edit-access";
 import { BookForm } from "./book-form";
 import { BookNotes } from "./book-notes";
+import { BookTitle } from "./book-title";
 import "./reading.css";
 import "./book-notes.css";
 
@@ -116,7 +117,9 @@ export function BookDetail({ bookId }: { bookId: string }) {
         <>
           <header className="reading-heading reading-detail-heading">
             <p className="eyebrow">YOUR BOOK. YOUR TAKEAWAYS.</p>
-            <h1>{book.title}</h1>
+            <h1>
+              <BookTitle title={book.title} />
+            </h1>
             <p>{book.author || "Author not added"}</p>
           </header>
           <section className="reading-book-summary" aria-label="Book progress">

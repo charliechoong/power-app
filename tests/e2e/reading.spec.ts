@@ -23,6 +23,12 @@ test("dragging books creates a suggested connection without an inner scroll area
   await page.mouse.up();
   await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
   await expect(map.getByText("0/1 earlier books finished")).toBeVisible();
+  await expect(page.locator(".reading-map-drop-feedback cite")).toHaveText([
+    "Book C",
+    "Book A",
+  ]);
+  await expect(map.locator(".reading-map-node a cite")).toHaveCount(2);
+  await expect(page.locator(".reading-book-info h3 cite")).toHaveCount(2);
   expect(await map.evaluate((node) => getComputedStyle(node).overflowY)).toBe(
     "visible",
   );
@@ -33,6 +39,13 @@ test("dragging books creates a suggested connection without an inner scroll area
   ).toBe(true);
   await page.reload();
   await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
+  await page
+    .getByRole("article", { name: "Book A" })
+    .getByRole("link", { name: "Book A" })
+    .click();
+  await expect(page.locator(".reading-detail-heading h1 cite")).toHaveText(
+    "Book A",
+  );
 });
 
 test("touch dragging from the handle connects books", async ({
@@ -95,6 +108,8 @@ test("map connects suggested earlier books and still allows starting the next bo
     .getByRole("button", { name: "Set reading order for Book C" })
     .click();
   const editor = page.getByRole("form", { name: "Reading order for Book C" });
+  await expect(editor.locator("h3 cite")).toHaveText("Book C");
+  await expect(editor.locator(".reading-map-options cite")).toHaveCount(2);
   await editor.getByRole("checkbox", { name: /Book A/ }).check();
   await editor.getByRole("checkbox", { name: /Book B/ }).check();
   await editor.getByRole("button", { name: "Save reading order" }).click();

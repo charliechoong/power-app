@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
 import {
@@ -15,6 +22,7 @@ import {
   MAP_NODE_HEIGHT,
   readingMapEdgePath,
 } from "../map-layout";
+import { BookTitle } from "./book-title";
 
 type Drag = {
   sourceId: string;
@@ -46,7 +54,7 @@ export function ReadingMap({
   const [saving, setSaving] = useState(false);
   const [width, setWidth] = useState(760);
   const [drag, setDrag] = useState<Drag | null>(null);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<ReactNode>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -136,7 +144,7 @@ export function ReadingMap({
     };
     dragRef.current = next;
     setDrag(next);
-    setFeedback("");
+    setFeedback(null);
   }
 
   async function finishDrag(event: PointerEvent<HTMLDivElement>) {
@@ -161,7 +169,12 @@ export function ReadingMap({
       validateReadingOrder(books, target.id, prerequisiteIds);
       setSaving(true);
       await onSave({ ...target, prerequisiteIds }, target);
-      setFeedback(`${source.title} is now suggested before ${target.title}.`);
+      setFeedback(
+        <>
+          <BookTitle title={source.title} /> is now suggested before{" "}
+          <BookTitle title={target.title} />.
+        </>,
+      );
     } catch (reason) {
       setFeedback(
         reason instanceof Error
@@ -298,7 +311,7 @@ export function ReadingMap({
                   href={`/reading/${encodeURIComponent(book.id)}`}
                   title={`Open ${book.title}`}
                 >
-                  {book.title}
+                  <BookTitle title={book.title} />
                 </Link>
                 <span className="reading-map-node-meta">
                   {earlierBooks.length
@@ -364,7 +377,9 @@ export function ReadingMap({
         >
           <div className="reading-map-editor-heading">
             <div>
-              <h3>Before {selected.title}</h3>
+              <h3>
+                Before <BookTitle title={selected.title} />
+              </h3>
               <p>
                 Choose books you’d like to finish first. You can still read this
                 book at any time.
@@ -394,7 +409,9 @@ export function ReadingMap({
                       )
                     }
                   />
-                  <span>{book.title}</span>
+                  <span>
+                    <BookTitle title={book.title} />
+                  </span>
                   <small>{STATUS_LABELS[book.status]}</small>
                 </label>
               ))}

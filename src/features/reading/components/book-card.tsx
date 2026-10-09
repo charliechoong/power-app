@@ -10,6 +10,7 @@ import {
   type BookInput,
 } from "../model";
 import { BookForm } from "./book-form";
+import { BookTitle } from "./book-title";
 
 export function BookCard({
   book,
@@ -76,7 +77,7 @@ export function BookCard({
               className="reading-book-title-link"
               href={`/reading/${encodeURIComponent(book.id)}`}
             >
-              {book.title}
+              <BookTitle title={book.title} />
             </Link>
           </h3>
           <p>{book.author || "Author not added"}</p>
