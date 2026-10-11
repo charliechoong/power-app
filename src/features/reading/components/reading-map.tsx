@@ -36,6 +36,12 @@ type Drag = {
   targetId: string | null;
   moved: boolean;
 };
+type ActiveConnection = {
+  sourceId: string;
+  targetId: string;
+  x: number;
+  y: number;
+};
 
 export function ReadingMap({
   books,
@@ -54,6 +60,8 @@ export function ReadingMap({
   const [saving, setSaving] = useState(false);
   const [width, setWidth] = useState(760);
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [activeConnection, setActiveConnection] =
+    useState<ActiveConnection | null>(null);
   const [feedback, setFeedback] = useState<ReactNode>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -188,6 +196,53 @@ export function ReadingMap({
     }
   }
 
+  function showConnection(
+    path: SVGPathElement,
+    sourceId: string,
+    targetId: string,
+  ) {
+    const midpoint = path.getPointAtLength(path.getTotalLength() / 2);
+    setActiveConnection({
+      sourceId,
+      targetId,
+      x: Math.max(22, Math.min(map.width - 22, midpoint.x)),
+      y: Math.max(22, Math.min(map.height - 22, midpoint.y)),
+    });
+  }
+
+  async function removeConnection(sourceId: string, targetId: string) {
+    if (!canEdit || disabled || saving) return;
+    const source = books.find((book) => book.id === sourceId);
+    const target = books.find((book) => book.id === targetId);
+    if (!source || !target || !target.prerequisiteIds.includes(sourceId)) return;
+    try {
+      setSaving(true);
+      setFeedback(null);
+      await onSave(
+        {
+          ...target,
+          prerequisiteIds: target.prerequisiteIds.filter((id) => id !== sourceId),
+        },
+        target,
+      );
+      setActiveConnection(null);
+      setFeedback(
+        <>
+          Removed the suggested order from <BookTitle title={source.title} /> to{" "}
+          <BookTitle title={target.title} />.
+        </>,
+      );
+    } catch (reason) {
+      setFeedback(
+        reason instanceof Error
+          ? reason.message
+          : "Couldn’t remove this connection.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (!hasBooks) return null;
 
   return (
@@ -202,7 +257,8 @@ export function ReadingMap({
           <p>
             Arrows mean “read first.” This is a suggested order; you can start
             any book whenever you like.
-            {canEdit && " Drag one book onto another to connect them."}
+            {canEdit &&
+              " Drag one book onto another to connect them. Hover over or tap an arrow to remove it."}
           </p>
         </div>
         <span className="reading-map-count">
@@ -215,12 +271,13 @@ export function ReadingMap({
           ref={canvasRef}
           className="reading-map-canvas"
           style={{ width: map.width, height: map.height }}
+          onPointerLeave={() => setActiveConnection(null)}
         >
           <svg
             className="reading-map-lines"
             width={map.width}
             height={map.height}
-            aria-hidden="true"
+            aria-hidden={canEdit ? undefined : true}
           >
             <defs>
               <marker
@@ -235,25 +292,82 @@ export function ReadingMap({
               </marker>
             </defs>
             {map.edges.map(({ source, target, sourceOffset, targetOffset }) => {
+              const path = readingMapEdgePath(
+                source,
+                target,
+                map.nodeWidth,
+                sourceOffset,
+                targetOffset,
+              );
               return (
-                <path
+                <g
                   key={`${source.book.id}-${target.book.id}`}
-                  data-reading-source-id={source.book.id}
-                  data-reading-target-id={target.book.id}
-                  d={readingMapEdgePath(
-                    source,
-                    target,
-                    map.nodeWidth,
-                    sourceOffset,
-                    targetOffset,
-                  )}
                   className={
-                    source.book.status === "finished"
-                      ? "reading-map-edge done"
-                      : "reading-map-edge"
+                    activeConnection?.sourceId === source.book.id &&
+                    activeConnection.targetId === target.book.id
+                      ? "reading-map-edge-group is-active"
+                      : "reading-map-edge-group"
                   }
-                  markerEnd="url(#reading-map-arrow)"
-                />
+                >
+                  <path
+                    data-reading-source-id={source.book.id}
+                    data-reading-target-id={target.book.id}
+                    d={path}
+                    className={
+                      source.book.status === "finished"
+                        ? "reading-map-edge done"
+                        : "reading-map-edge"
+                    }
+                    markerEnd="url(#reading-map-arrow)"
+                    aria-hidden="true"
+                  />
+                  {canEdit && (
+                    <path
+                      d={path}
+                      className="reading-map-edge-hit"
+                      data-reading-source-id={source.book.id}
+                      data-reading-target-id={target.book.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Remove suggested order: ${source.book.title} before ${target.book.title}`}
+                      onPointerEnter={(event) =>
+                        showConnection(
+                          event.currentTarget,
+                          source.book.id,
+                          target.book.id,
+                        )
+                      }
+                      onClick={(event) =>
+                        showConnection(
+                          event.currentTarget,
+                          source.book.id,
+                          target.book.id,
+                        )
+                      }
+                      onFocus={(event) =>
+                        showConnection(
+                          event.currentTarget,
+                          source.book.id,
+                          target.book.id,
+                        )
+                      }
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" ||
+                          event.key === " " ||
+                          event.key === "Delete" ||
+                          event.key === "Backspace"
+                        ) {
+                          event.preventDefault();
+                          void removeConnection(
+                            source.book.id,
+                            target.book.id,
+                          );
+                        }
+                      }}
+                    />
+                  )}
+                </g>
               );
             })}
             {drag?.moved &&
@@ -272,6 +386,30 @@ export function ReadingMap({
                 );
               })()}
           </svg>
+          {canEdit &&
+            activeConnection &&
+            map.edges.some(
+              (edge) =>
+                edge.source.book.id === activeConnection.sourceId &&
+                edge.target.book.id === activeConnection.targetId,
+            ) && (
+              <button
+                type="button"
+                className="reading-map-remove-connection"
+                style={{ left: activeConnection.x, top: activeConnection.y }}
+                aria-label={`Remove suggested order: ${books.find((book) => book.id === activeConnection.sourceId)?.title} before ${books.find((book) => book.id === activeConnection.targetId)?.title}`}
+                title="Remove this connection"
+                disabled={disabled || saving}
+                onClick={() =>
+                  void removeConnection(
+                    activeConnection.sourceId,
+                    activeConnection.targetId,
+                  )
+                }
+              >
+                <Icon name="trash" size={16} />
+              </button>
+            )}
           {map.nodes.map(({ book, x, y }) => {
             const earlierBooks = book.prerequisiteIds.flatMap((id) => {
               const earlier = books.find((item) => item.id === id);

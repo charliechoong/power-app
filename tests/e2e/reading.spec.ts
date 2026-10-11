@@ -41,7 +41,7 @@ test("related books are positioned so their arrows stay clear", async ({
   const distance = await map.evaluate((section) => {
     const findEdge = (source: string, target: string) =>
       section.querySelector<SVGPathElement>(
-        `path[data-reading-source-id="${source}"][data-reading-target-id="${target}"]`,
+        `path.reading-map-edge[data-reading-source-id="${source}"][data-reading-target-id="${target}"]`,
       )!;
     const first = findEdge("sapiens", "life");
     const second = findEdge("charisma", "black");
@@ -64,7 +64,7 @@ test("related books are positioned so their arrows stay clear", async ({
   } else {
     const path = await map
       .locator(
-        'path[data-reading-source-id="sapiens"][data-reading-target-id="life"]',
+        'path.reading-map-edge[data-reading-source-id="sapiens"][data-reading-target-id="life"]',
       )
       .getAttribute("d");
     expect(path).toMatch(/ H [\d.]+ V [\d.]+ H [\d.]+$/);
@@ -197,6 +197,57 @@ test("map connects suggested earlier books and still allows starting the next bo
   await page.reload();
   await expect(map.locator("path.reading-map-edge")).toHaveCount(2);
   await expect(map.getByText("0/2 earlier books finished")).toBeVisible();
+});
+
+test("an arrow removes only its own suggested reading order", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/reading");
+  for (const title of ["Book A", "Book B", "Book C"]) {
+    await page.getByLabel("Book title").fill(title);
+    await page.getByRole("button", { name: "Add book", exact: true }).click();
+  }
+  const map = page.locator(".reading-map-frame");
+  await map
+    .getByRole("button", { name: "Set reading order for Book C" })
+    .click();
+  const editor = page.getByRole("form", { name: "Reading order for Book C" });
+  await editor.getByRole("checkbox", { name: /Book A/ }).check();
+  await editor.getByRole("checkbox", { name: /Book B/ }).check();
+  await editor.getByRole("button", { name: "Save reading order" }).click();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(2);
+
+  const firstEdge = map.locator(
+    'path.reading-map-edge-hit[aria-label="Remove suggested order: Book A before Book C"]',
+  );
+  await firstEdge.scrollIntoViewIfNeeded();
+  const midpoint = await firstEdge.evaluate((path: SVGPathElement) => {
+    const point = path.getPointAtLength(path.getTotalLength() / 2);
+    const rect = path.ownerSVGElement!.getBoundingClientRect();
+    return { x: rect.left + point.x, y: rect.top + point.y };
+  });
+  if (testInfo.project.name === "mobile") {
+    await page.touchscreen.tap(midpoint.x, midpoint.y);
+  } else {
+    await page.mouse.move(midpoint.x, midpoint.y);
+  }
+  await map.screenshot({ path: testInfo.outputPath("remove-connection.png") });
+  await map
+    .getByRole("button", {
+      name: "Remove suggested order: Book A before Book C",
+    })
+    .last()
+    .click();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
+  await expect(map.getByText("0/1 earlier books finished")).toBeVisible();
+  await page.reload();
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
+  const remaining = map.locator(
+    'path.reading-map-edge-hit[aria-label="Remove suggested order: Book B before Book C"]',
+  );
+  await remaining.focus();
+  await remaining.press("Delete");
+  await expect(map.locator("path.reading-map-edge")).toHaveCount(0);
 });
 
 test("add a book, track pages, finish, reopen, filter, export and delete", async ({

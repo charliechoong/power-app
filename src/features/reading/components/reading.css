@@ -197,6 +197,49 @@
   stroke: #708e61;
   stroke-dasharray: none;
 }
+.reading-map-edge-group.is-active .reading-map-edge {
+  stroke: #56764d;
+  stroke-width: 3;
+}
+.reading-map-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 20;
+  pointer-events: stroke;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.reading-map-edge-hit:focus {
+  outline: none;
+}
+.reading-map-remove-connection {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #bfcdb5;
+  border-radius: 50%;
+  background: white;
+  color: #874c42;
+  box-shadow: 0 3px 12px #263b2930;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+}
+.reading-map-remove-connection:hover {
+  background: #fff4f1;
+  border-color: #b87768;
+}
+.reading-map-remove-connection:focus-visible {
+  outline: 2px solid #56764d;
+  outline-offset: 2px;
+}
+.reading-map-remove-connection:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .reading-map-preview-edge {
   fill: none;
   stroke: #597950;
