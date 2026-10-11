@@ -12,6 +12,7 @@ import {
 } from "../src/features/reading/model";
 import {
   layoutReadingMap,
+  MAP_ROW_SPACING,
   readingMapEdgePath,
 } from "../src/features/reading/map-layout";
 import {
@@ -281,8 +282,8 @@ test("suggested reading order supports multiple earlier books without blocking p
   const map = layoutReadingMap(await repo.list());
   assert.equal(map.edges.length, 2);
   assert.ok(
-    map.nodes.find((node) => node.book.id === third.id)!.x >
-      map.nodes.find((node) => node.book.id === first.id)!.x,
+    map.nodes.find((node) => node.book.id === third.id)!.y >
+      map.nodes.find((node) => node.book.id === first.id)!.y,
   );
   const narrowMap = layoutReadingMap(await repo.list(), 320);
   assert.equal(narrowMap.width, 320);
@@ -332,12 +333,17 @@ test("reading map places related books together and separates shared arrows", ()
   const map = layoutReadingMap(books, 900);
   const position = (id: string) =>
     map.nodes.find((node) => node.book.id === id)!;
-  assert.equal(position("Thing Explainer").y + 160, position("Sapiens").y);
-  assert.equal(position("Sapiens").y + 160, position("The Charisma Myth").y);
-  assert.equal(position("Sapiens").y, position("The Black Book of Power").y);
+  assert.equal(position("Thing Explainer").y, position("Sapiens").y);
+  assert.equal(position("Sapiens").y + MAP_ROW_SPACING, position("Life 3.0").y);
+  assert.equal(
+    position("The Charisma Myth").y + MAP_ROW_SPACING,
+    position("The Black Book of Power").y,
+  );
+  assert.ok(position("The Charisma Myth").x > position("Designing Data").x);
+  assert.ok(map.edges.every((edge) => edge.source.y < edge.target.y));
   const lifeArrows = map.edges
     .filter((edge) => edge.target.book.id === "Life 3.0")
-    .sort((a, b) => a.source.y - b.source.y);
+    .sort((a, b) => a.source.x - b.source.x);
   assert.deepEqual(
     lifeArrows.map((edge) => edge.targetOffset),
     [-12, 12],
@@ -346,14 +352,17 @@ test("reading map places related books together and separates shared arrows", ()
   const mobilePosition = (id: string) =>
     mobile.nodes.find((node) => node.book.id === id)!;
   assert.equal(
-    mobilePosition("Designing Data").y + 160,
+    mobilePosition("Designing Data").y + MAP_ROW_SPACING,
     mobilePosition("Building Microservices").y,
   );
   assert.equal(
-    mobilePosition("Thing Explainer").y + 160,
+    mobilePosition("Thing Explainer").y + MAP_ROW_SPACING,
     mobilePosition("Sapiens").y,
   );
-  assert.equal(mobilePosition("Sapiens").y + 160, mobilePosition("Life 3.0").y);
+  assert.equal(
+    mobilePosition("Sapiens").y + MAP_ROW_SPACING,
+    mobilePosition("Life 3.0").y,
+  );
   const mobileArrow = mobile.edges.find(
     (edge) =>
       edge.source.book.id === "Sapiens" && edge.target.book.id === "Life 3.0",
@@ -364,8 +373,9 @@ test("reading map places related books together and separates shared arrows", ()
     mobile.nodeWidth,
     mobileArrow.sourceOffset,
     mobileArrow.targetOffset,
+    mobileArrow.laneX,
   );
-  assert.match(mobilePath, /^M [\d.]+ [\d.]+ H [\d.]+ V [\d.]+ H [\d.]+$/);
+  assert.match(mobilePath, /^M [\d.]+ [\d.]+ C /);
   const otherLifeArrow = mobile.edges.find(
     (edge) =>
       edge.source.book.id === "Thing Explainer" &&
@@ -377,12 +387,8 @@ test("reading map places related books together and separates shared arrows", ()
     mobile.nodeWidth,
     otherLifeArrow.sourceOffset,
     otherLifeArrow.targetOffset,
+    otherLifeArrow.laneX,
   );
-  assert.ok(
-    Number(otherPath.split(" ")[1]) < mobilePosition("Thing Explainer").x,
-  );
-  assert.ok(
-    Number(mobilePath.split(" ")[1]) >
-      mobilePosition("Sapiens").x + mobile.nodeWidth,
-  );
+  assert.match(otherPath, /^M [\d.]+ [\d.]+ V [\d.]+ H [\d.]+ V /);
+  assert.ok(otherLifeArrow.laneX < mobilePosition("Sapiens").x);
 });

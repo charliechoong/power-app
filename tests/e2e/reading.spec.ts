@@ -38,6 +38,28 @@ test("related books are positioned so their arrows stay clear", async ({
   await page.goto("/reading");
   const map = page.locator(".reading-map-section");
   await expect(map.locator(".reading-map-node")).toHaveCount(7);
+  const allArrowsPointDown = await map.evaluate((section) =>
+    [
+      ...section.querySelectorAll<SVGPathElement>("path.reading-map-edge"),
+    ].every((edge) => {
+      const source = section.querySelector<HTMLElement>(
+        `[data-reading-book-id="${edge.dataset.readingSourceId}"]`,
+      )!;
+      const target = section.querySelector<HTMLElement>(
+        `[data-reading-book-id="${edge.dataset.readingTargetId}"]`,
+      )!;
+      return (
+        source.getBoundingClientRect().bottom <
+        target.getBoundingClientRect().top
+      );
+    }),
+  );
+  expect(allArrowsPointDown).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
   const distance = await map.evaluate((section) => {
     const findEdge = (source: string, target: string) =>
       section.querySelector<SVGPathElement>(
@@ -67,7 +89,7 @@ test("related books are positioned so their arrows stay clear", async ({
         'path.reading-map-edge[data-reading-source-id="sapiens"][data-reading-target-id="life"]',
       )
       .getAttribute("d");
-    expect(path).toMatch(/ H [\d.]+ V [\d.]+ H [\d.]+$/);
+    expect(path).toMatch(/ C /);
   }
   await map.screenshot({ path: testInfo.outputPath("reading-map.png") });
 });
@@ -232,11 +254,17 @@ test("an arrow removes only its own suggested reading order", async ({
     await page.mouse.move(midpoint.x, midpoint.y);
     const frame = await map.boundingBox();
     if (!frame) throw new Error("Reading map position unavailable");
-    await page.mouse.move(frame.x + frame.width - 8, frame.y + frame.height - 8);
+    await page.mouse.move(
+      frame.x + frame.width - 8,
+      frame.y + frame.height - 8,
+    );
     await expect(map.locator(".reading-map-remove-connection")).toHaveCount(0);
     await page.mouse.move(midpoint.x, midpoint.y);
     await map.locator(".reading-map-remove-connection").hover();
-    await page.mouse.move(frame.x + frame.width - 8, frame.y + frame.height - 8);
+    await page.mouse.move(
+      frame.x + frame.width - 8,
+      frame.y + frame.height - 8,
+    );
     await expect(map.locator(".reading-map-remove-connection")).toHaveCount(0);
     await page.mouse.move(midpoint.x, midpoint.y);
   }

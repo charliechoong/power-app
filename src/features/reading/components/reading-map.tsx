@@ -66,7 +66,9 @@ export function ReadingMap({
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
-  const hideConnectionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideConnectionTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const selected = books.find((book) => book.id === selectedId);
   const map = useMemo(() => layoutReadingMap(books, width), [books, width]);
   const hasBooks = books.length > 0;
@@ -239,14 +241,17 @@ export function ReadingMap({
     if (!canEdit || disabled || saving) return;
     const source = books.find((book) => book.id === sourceId);
     const target = books.find((book) => book.id === targetId);
-    if (!source || !target || !target.prerequisiteIds.includes(sourceId)) return;
+    if (!source || !target || !target.prerequisiteIds.includes(sourceId))
+      return;
     try {
       setSaving(true);
       setFeedback(null);
       await onSave(
         {
           ...target,
-          prerequisiteIds: target.prerequisiteIds.filter((id) => id !== sourceId),
+          prerequisiteIds: target.prerequisiteIds.filter(
+            (id) => id !== sourceId,
+          ),
         },
         target,
       );
@@ -329,89 +334,92 @@ export function ReadingMap({
                 <path d="M 0 0 L 8 4 L 0 8 z" fill="#9baf88" />
               </marker>
             </defs>
-            {map.edges.map(({ source, target, sourceOffset, targetOffset }) => {
-              const path = readingMapEdgePath(
-                source,
-                target,
-                map.nodeWidth,
-                sourceOffset,
-                targetOffset,
-              );
-              return (
-                <g
-                  key={`${source.book.id}-${target.book.id}`}
-                  className={
-                    activeConnection?.sourceId === source.book.id &&
-                    activeConnection.targetId === target.book.id
-                      ? "reading-map-edge-group is-active"
-                      : "reading-map-edge-group"
-                  }
-                >
-                  <path
-                    data-reading-source-id={source.book.id}
-                    data-reading-target-id={target.book.id}
-                    d={path}
+            {map.edges.map(
+              ({ source, target, sourceOffset, targetOffset, laneX }) => {
+                const path = readingMapEdgePath(
+                  source,
+                  target,
+                  map.nodeWidth,
+                  sourceOffset,
+                  targetOffset,
+                  laneX,
+                );
+                return (
+                  <g
+                    key={`${source.book.id}-${target.book.id}`}
                     className={
-                      source.book.status === "finished"
-                        ? "reading-map-edge done"
-                        : "reading-map-edge"
+                      activeConnection?.sourceId === source.book.id &&
+                      activeConnection.targetId === target.book.id
+                        ? "reading-map-edge-group is-active"
+                        : "reading-map-edge-group"
                     }
-                    markerEnd="url(#reading-map-arrow)"
-                    aria-hidden="true"
-                  />
-                  {canEdit && (
+                  >
                     <path
-                      d={path}
-                      className="reading-map-edge-hit"
                       data-reading-source-id={source.book.id}
                       data-reading-target-id={target.book.id}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Remove suggested order: ${source.book.title} before ${target.book.title}`}
-                      onPointerEnter={(event) =>
-                        showConnection(
-                          event.currentTarget,
-                          source.book.id,
-                          target.book.id,
-                        )
+                      d={path}
+                      className={
+                        source.book.status === "finished"
+                          ? "reading-map-edge done"
+                          : "reading-map-edge"
                       }
-                      onPointerLeave={(event) => {
-                        if (event.pointerType !== "touch")
-                          hideConnectionSoon();
-                      }}
-                      onClick={(event) =>
-                        showConnection(
-                          event.currentTarget,
-                          source.book.id,
-                          target.book.id,
-                        )
-                      }
-                      onFocus={(event) =>
-                        showConnection(
-                          event.currentTarget,
-                          source.book.id,
-                          target.book.id,
-                        )
-                      }
-                      onKeyDown={(event) => {
-                        if (
-                          event.key === "Enter" ||
-                          event.key === " " ||
-                          event.key === "Delete" ||
-                          event.key === "Backspace"
-                        ) {
-                          event.preventDefault();
-                          void removeConnection(
+                      markerEnd="url(#reading-map-arrow)"
+                      aria-hidden="true"
+                    />
+                    {canEdit && (
+                      <path
+                        d={path}
+                        className="reading-map-edge-hit"
+                        data-reading-source-id={source.book.id}
+                        data-reading-target-id={target.book.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Remove suggested order: ${source.book.title} before ${target.book.title}`}
+                        onPointerEnter={(event) =>
+                          showConnection(
+                            event.currentTarget,
                             source.book.id,
                             target.book.id,
-                          );
+                          )
                         }
-                      }}
-                    />
-                  )}
-                </g>
-              );
-            })}
+                        onPointerLeave={(event) => {
+                          if (event.pointerType !== "touch")
+                            hideConnectionSoon();
+                        }}
+                        onClick={(event) =>
+                          showConnection(
+                            event.currentTarget,
+                            source.book.id,
+                            target.book.id,
+                          )
+                        }
+                        onFocus={(event) =>
+                          showConnection(
+                            event.currentTarget,
+                            source.book.id,
+                            target.book.id,
+                          )
+                        }
+                        onKeyDown={(event) => {
+                          if (
+                            event.key === "Enter" ||
+                            event.key === " " ||
+                            event.key === "Delete" ||
+                            event.key === "Backspace"
+                          ) {
+                            event.preventDefault();
+                            void removeConnection(
+                              source.book.id,
+                              target.book.id,
+                            );
+                          }
+                        }}
+                      />
+                    )}
+                  </g>
+                );
+              },
+            )}
             {drag?.moved &&
               (() => {
                 const source = map.nodes.find(
