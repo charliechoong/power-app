@@ -1,5 +1,77 @@
 import { test, expect } from "@playwright/test";
 
+test("related books are positioned so their arrows stay clear", async ({
+  page,
+}, testInfo) => {
+  await page.addInitScript(() => {
+    const books = [
+      ["design", "Designing Data-intensive applications", []],
+      ["building", "Building Microservices", ["design"]],
+      ["thing", "Thing Explainer", []],
+      ["life", "Life 3.0", ["thing", "sapiens"]],
+      ["charisma", "The Charisma Myth", []],
+      ["black", "The Black Book of Power", ["charisma"]],
+      ["sapiens", "Sapiens", []],
+    ] as const;
+    books.forEach(([id, title, prerequisiteIds], index) => {
+      localStorage.setItem(
+        `personal-hub:reading:v1:${id}`,
+        JSON.stringify({
+          id,
+          title,
+          author: "",
+          status: "planned",
+          currentPage: 0,
+          totalPages: null,
+          prerequisiteIds,
+          notes: [],
+          createdAt: new Date(
+            Date.UTC(2026, 0, 1, 0, 0, 7 - index),
+          ).toISOString(),
+          updatedAt: new Date(
+            Date.UTC(2026, 0, 1, 0, 0, 7 - index),
+          ).toISOString(),
+        }),
+      );
+    });
+  });
+  await page.goto("/reading");
+  const map = page.locator(".reading-map-section");
+  await expect(map.locator(".reading-map-node")).toHaveCount(7);
+  const distance = await map.evaluate((section) => {
+    const findEdge = (source: string, target: string) =>
+      section.querySelector<SVGPathElement>(
+        `path[data-reading-source-id="${source}"][data-reading-target-id="${target}"]`,
+      )!;
+    const first = findEdge("sapiens", "life");
+    const second = findEdge("charisma", "black");
+    let minimum = Number.POSITIVE_INFINITY;
+    for (let firstStep = 0; firstStep <= 100; firstStep++) {
+      const a = first.getPointAtLength(
+        (first.getTotalLength() * firstStep) / 100,
+      );
+      for (let secondStep = 0; secondStep <= 100; secondStep++) {
+        const b = second.getPointAtLength(
+          (second.getTotalLength() * secondStep) / 100,
+        );
+        minimum = Math.min(minimum, Math.hypot(a.x - b.x, a.y - b.y));
+      }
+    }
+    return minimum;
+  });
+  if (testInfo.project.name === "desktop") {
+    expect(distance).toBeGreaterThan(20);
+  } else {
+    const path = await map
+      .locator(
+        'path[data-reading-source-id="sapiens"][data-reading-target-id="life"]',
+      )
+      .getAttribute("d");
+    expect(path).toMatch(/ H [\d.]+ V [\d.]+ H [\d.]+$/);
+  }
+  await map.screenshot({ path: testInfo.outputPath("reading-map.png") });
+});
+
 test("dragging books creates a suggested connection without an inner scroll area", async ({
   page,
 }) => {
@@ -12,6 +84,7 @@ test("dragging books creates a suggested connection without an inner scroll area
   const source = map.locator("[data-reading-book-id]", { hasText: "Book C" });
   const target = map.locator("[data-reading-book-id]", { hasText: "Book A" });
   await source.scrollIntoViewIfNeeded();
+  await target.scrollIntoViewIfNeeded();
   const from = await source.locator(".reading-map-drag-handle").boundingBox();
   const to = await target.boundingBox();
   if (!from || !to) throw new Error("Book positions unavailable");
@@ -39,10 +112,12 @@ test("dragging books creates a suggested connection without an inner scroll area
   ).toBe(true);
   await page.reload();
   await expect(map.locator("path.reading-map-edge")).toHaveCount(1);
-  await page
+  const bookUrl = await page
     .getByRole("article", { name: "Book A" })
     .getByRole("link", { name: "Book A" })
-    .click();
+    .getAttribute("href");
+  if (!bookUrl) throw new Error("Book link unavailable");
+  await page.goto(bookUrl);
   await expect(page.locator(".reading-detail-heading h1 cite")).toHaveText(
     "Book A",
   );
@@ -64,6 +139,7 @@ test("touch dragging from the handle connects books", async ({
   const source = map.locator("[data-reading-book-id]", { hasText: "Book C" });
   const target = map.locator("[data-reading-book-id]", { hasText: "Book A" });
   await source.scrollIntoViewIfNeeded();
+  await target.scrollIntoViewIfNeeded();
   const from = await source.locator(".reading-map-drag-handle").boundingBox();
   const to = await target.boundingBox();
   if (!from || !to) throw new Error("Book positions unavailable");

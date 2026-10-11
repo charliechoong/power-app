@@ -80,11 +80,13 @@ export function ReadingMap({
       if (!current?.moved) return;
       const edge = 76;
       const speed =
-        current.clientY < edge
-          ? -Math.min(14, (edge - current.clientY) / 5)
-          : current.clientY > window.innerHeight - edge
-            ? Math.min(14, (current.clientY - window.innerHeight + edge) / 5)
-            : 0;
+        current.targetId && current.targetId !== current.sourceId
+          ? 0
+          : current.clientY < edge
+            ? -Math.min(14, (edge - current.clientY) / 5)
+            : current.clientY > window.innerHeight - edge
+              ? Math.min(14, (current.clientY - window.innerHeight + edge) / 5)
+              : 0;
       if (speed) {
         window.scrollBy(0, speed);
         updateDrag(current.clientX, current.clientY);
@@ -232,11 +234,19 @@ export function ReadingMap({
                 <path d="M 0 0 L 8 4 L 0 8 z" fill="#9baf88" />
               </marker>
             </defs>
-            {map.edges.map(({ source, target }) => {
+            {map.edges.map(({ source, target, sourceOffset, targetOffset }) => {
               return (
                 <path
                   key={`${source.book.id}-${target.book.id}`}
-                  d={readingMapEdgePath(source, target, map.nodeWidth)}
+                  data-reading-source-id={source.book.id}
+                  data-reading-target-id={target.book.id}
+                  d={readingMapEdgePath(
+                    source,
+                    target,
+                    map.nodeWidth,
+                    sourceOffset,
+                    targetOffset,
+                  )}
                   className={
                     source.book.status === "finished"
                       ? "reading-map-edge done"

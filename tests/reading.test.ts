@@ -7,9 +7,13 @@ import {
   parseBook,
   validateNote,
   validateReadingOrder,
+  type Book,
   type BookInput,
 } from "../src/features/reading/model";
-import { layoutReadingMap } from "../src/features/reading/map-layout";
+import {
+  layoutReadingMap,
+  readingMapEdgePath,
+} from "../src/features/reading/map-layout";
 import {
   createReadingRepository,
   READING_STORAGE_PREFIX,
@@ -261,4 +265,84 @@ test("suggested reading order supports multiple earlier books without blocking p
   );
   await repo.remove(first.id);
   assert.deepEqual((await repo.get(third.id))?.prerequisiteIds, [second.id]);
+});
+
+test("reading map places related books together and separates shared arrows", () => {
+  const book = (id: string, prerequisiteIds: string[] = []): Book => ({
+    id,
+    title: id,
+    author: "",
+    status: "planned",
+    currentPage: 0,
+    totalPages: null,
+    prerequisiteIds,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    notes: [],
+  });
+  const books = [
+    book("Designing Data"),
+    book("Building Microservices", ["Designing Data"]),
+    book("Thing Explainer"),
+    book("Life 3.0", ["Thing Explainer", "Sapiens"]),
+    book("The Charisma Myth"),
+    book("The Black Book of Power", ["The Charisma Myth"]),
+    book("Sapiens"),
+  ];
+  const map = layoutReadingMap(books, 900);
+  const position = (id: string) =>
+    map.nodes.find((node) => node.book.id === id)!;
+  assert.equal(position("Thing Explainer").y + 160, position("Sapiens").y);
+  assert.equal(position("Sapiens").y + 160, position("The Charisma Myth").y);
+  assert.equal(position("Sapiens").y, position("The Black Book of Power").y);
+  const lifeArrows = map.edges
+    .filter((edge) => edge.target.book.id === "Life 3.0")
+    .sort((a, b) => a.source.y - b.source.y);
+  assert.deepEqual(
+    lifeArrows.map((edge) => edge.targetOffset),
+    [-12, 12],
+  );
+  const mobile = layoutReadingMap(books, 320);
+  const mobilePosition = (id: string) =>
+    mobile.nodes.find((node) => node.book.id === id)!;
+  assert.equal(
+    mobilePosition("Designing Data").y + 160,
+    mobilePosition("Building Microservices").y,
+  );
+  assert.equal(
+    mobilePosition("Thing Explainer").y + 160,
+    mobilePosition("Sapiens").y,
+  );
+  assert.equal(mobilePosition("Sapiens").y + 160, mobilePosition("Life 3.0").y);
+  const mobileArrow = mobile.edges.find(
+    (edge) =>
+      edge.source.book.id === "Sapiens" && edge.target.book.id === "Life 3.0",
+  )!;
+  const mobilePath = readingMapEdgePath(
+    mobileArrow.source,
+    mobileArrow.target,
+    mobile.nodeWidth,
+    mobileArrow.sourceOffset,
+    mobileArrow.targetOffset,
+  );
+  assert.match(mobilePath, /^M [\d.]+ [\d.]+ H [\d.]+ V [\d.]+ H [\d.]+$/);
+  const otherLifeArrow = mobile.edges.find(
+    (edge) =>
+      edge.source.book.id === "Thing Explainer" &&
+      edge.target.book.id === "Life 3.0",
+  )!;
+  const otherPath = readingMapEdgePath(
+    otherLifeArrow.source,
+    otherLifeArrow.target,
+    mobile.nodeWidth,
+    otherLifeArrow.sourceOffset,
+    otherLifeArrow.targetOffset,
+  );
+  assert.ok(
+    Number(otherPath.split(" ")[1]) < mobilePosition("Thing Explainer").x,
+  );
+  assert.ok(
+    Number(mobilePath.split(" ")[1]) >
+      mobilePosition("Sapiens").x + mobile.nodeWidth,
+  );
 });
