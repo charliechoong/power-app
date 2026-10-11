@@ -66,6 +66,7 @@ export function ReadingMap({
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
+  const hideConnectionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selected = books.find((book) => book.id === selectedId);
   const map = useMemo(() => layoutReadingMap(books, width), [books, width]);
   const hasBooks = books.length > 0;
@@ -79,6 +80,14 @@ export function ReadingMap({
     observer.observe(frame);
     return () => observer.disconnect();
   }, [hasBooks]);
+
+  useEffect(
+    () => () => {
+      if (hideConnectionTimer.current)
+        clearTimeout(hideConnectionTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!drag?.moved) return;
@@ -201,6 +210,7 @@ export function ReadingMap({
     sourceId: string,
     targetId: string,
   ) {
+    cancelHideConnection();
     const midpoint = path.getPointAtLength(path.getTotalLength() / 2);
     setActiveConnection({
       sourceId,
@@ -208,6 +218,21 @@ export function ReadingMap({
       x: Math.max(22, Math.min(map.width - 22, midpoint.x)),
       y: Math.max(22, Math.min(map.height - 22, midpoint.y)),
     });
+  }
+
+  function cancelHideConnection() {
+    if (hideConnectionTimer.current) {
+      clearTimeout(hideConnectionTimer.current);
+      hideConnectionTimer.current = null;
+    }
+  }
+
+  function hideConnectionSoon() {
+    cancelHideConnection();
+    hideConnectionTimer.current = setTimeout(() => {
+      setActiveConnection(null);
+      hideConnectionTimer.current = null;
+    }, 120);
   }
 
   async function removeConnection(sourceId: string, targetId: string) {
@@ -271,7 +296,20 @@ export function ReadingMap({
           ref={canvasRef}
           className="reading-map-canvas"
           style={{ width: map.width, height: map.height }}
-          onPointerLeave={() => setActiveConnection(null)}
+          onPointerLeave={() => {
+            cancelHideConnection();
+            setActiveConnection(null);
+          }}
+          onPointerDown={(event) => {
+            if (
+              event.pointerType === "touch" &&
+              !(event.target as Element).closest(
+                ".reading-map-edge-hit, .reading-map-remove-connection",
+              )
+            ) {
+              setActiveConnection(null);
+            }
+          }}
         >
           <svg
             className="reading-map-lines"
@@ -337,6 +375,10 @@ export function ReadingMap({
                           target.book.id,
                         )
                       }
+                      onPointerLeave={(event) => {
+                        if (event.pointerType !== "touch")
+                          hideConnectionSoon();
+                      }}
                       onClick={(event) =>
                         showConnection(
                           event.currentTarget,
@@ -400,6 +442,10 @@ export function ReadingMap({
                 aria-label={`Remove suggested order: ${books.find((book) => book.id === activeConnection.sourceId)?.title} before ${books.find((book) => book.id === activeConnection.targetId)?.title}`}
                 title="Remove this connection"
                 disabled={disabled || saving}
+                onPointerEnter={cancelHideConnection}
+                onPointerLeave={(event) => {
+                  if (event.pointerType !== "touch") hideConnectionSoon();
+                }}
                 onClick={() =>
                   void removeConnection(
                     activeConnection.sourceId,

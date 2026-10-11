@@ -230,6 +230,15 @@ test("an arrow removes only its own suggested reading order", async ({
     await page.touchscreen.tap(midpoint.x, midpoint.y);
   } else {
     await page.mouse.move(midpoint.x, midpoint.y);
+    const frame = await map.boundingBox();
+    if (!frame) throw new Error("Reading map position unavailable");
+    await page.mouse.move(frame.x + frame.width - 8, frame.y + frame.height - 8);
+    await expect(map.locator(".reading-map-remove-connection")).toHaveCount(0);
+    await page.mouse.move(midpoint.x, midpoint.y);
+    await map.locator(".reading-map-remove-connection").hover();
+    await page.mouse.move(frame.x + frame.width - 8, frame.y + frame.height - 8);
+    await expect(map.locator(".reading-map-remove-connection")).toHaveCount(0);
+    await page.mouse.move(midpoint.x, midpoint.y);
   }
   await map.screenshot({ path: testInfo.outputPath("remove-connection.png") });
   await map
