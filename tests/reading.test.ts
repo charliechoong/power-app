@@ -108,6 +108,46 @@ test("manual completion fills known pages and supports unknown totals", () => {
   );
 });
 
+test("bookshelf groups reading, to-read, and finished books by newest update", () => {
+  const makeBook = (
+    id: string,
+    status: Book["status"],
+    updatedAt: string,
+  ): Book => ({
+    ...draft,
+    id,
+    title: id,
+    author: "Test author",
+    status,
+    prerequisiteIds: [],
+    notes: [],
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt,
+  });
+  const books = [
+    makeBook("finished-new", "finished", "2026-10-03T00:00:00.000Z"),
+    makeBook("planned-old", "planned", "2026-10-01T00:00:00.000Z"),
+    makeBook("reading-old", "reading", "2026-10-01T00:00:00.000Z"),
+    makeBook("planned-new", "planned", "2026-10-02T00:00:00.000Z"),
+    makeBook("reading-new", "reading", "2026-10-02T00:00:00.000Z"),
+  ];
+  assert.deepEqual(
+    filterBooks(books, "all", "").map((book) => book.id),
+    [
+      "reading-new",
+      "reading-old",
+      "planned-new",
+      "planned-old",
+      "finished-new",
+    ],
+  );
+  assert.deepEqual(
+    filterBooks(books, "planned", "new").map((book) => book.id),
+    ["planned-new"],
+  );
+  assert.equal(books[0].id, "finished-new");
+});
+
 test("reading and reflections persist independently, including edits and deletes", async () => {
   const storage = memoryStorage();
   const repo = createReadingRepository(() => storage);

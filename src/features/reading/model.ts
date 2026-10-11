@@ -172,9 +172,21 @@ export function filterBooks(
   query: string,
 ) {
   const term = query.trim().toLocaleLowerCase();
-  return books.filter(
-    (book) =>
-      (status === "all" || book.status === status) &&
-      `${book.title} ${book.author}`.toLocaleLowerCase().includes(term),
-  );
+  const statusOrder: Record<BookStatus, number> = {
+    reading: 0,
+    planned: 1,
+    finished: 2,
+  };
+  return books
+    .filter(
+      (book) =>
+        (status === "all" || book.status === status) &&
+        `${book.title} ${book.author}`.toLocaleLowerCase().includes(term),
+    )
+    .sort(
+      (a, b) =>
+        statusOrder[a.status] - statusOrder[b.status] ||
+        Date.parse(b.updatedAt) - Date.parse(a.updatedAt) ||
+        a.id.localeCompare(b.id),
+    );
 }
