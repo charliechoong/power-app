@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #f9faf7;
-  --color-foreground: #273b33;
+  --color-background: #f8f5ef;
+  --color-foreground: #263247;
   --font-sans: Arial, Helvetica, sans-serif;
 }
 :root {
-  --green: #304f40;
-  --ink: #2d3e35;
-  --muted: #758077;
-  --line: #e1e5dc;
-  --paper: #f9faf7;
+  --primary: #27364d;
+  --ink: #263247;
+  --muted: #747887;
+  --line: #e6e0d6;
+  --paper: #f8f5ef;
 }
 * {
   box-sizing: border-box;
@@ -51,7 +51,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #658270;
+  outline: 2px solid #b95a4e;
 }
 a {
   text-decoration: none;
@@ -69,7 +69,7 @@ button:hover:not(:disabled) {
   position: fixed;
   top: -80px;
   left: 16px;
-  background: var(--green);
+  background: var(--primary);
   color: white;
   padding: 12px;
   z-index: 20;
@@ -84,8 +84,8 @@ button:hover:not(:disabled) {
 .sidebar {
   width: 245px;
   flex-shrink: 0;
-  background: #f0f2eb;
-  border-right: 1px solid var(--line);
+  background: #243249;
+  border-right: 1px solid #36445b;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -99,6 +99,7 @@ button:hover:not(:disabled) {
   letter-spacing: -0.9px;
   padding: 35px 24px;
   white-space: nowrap;
+  color: #fffaf1;
 }
 .brand-mark {
   margin-right: 10px;
@@ -116,11 +117,12 @@ button:hover:not(:disabled) {
   font-size: 10px;
   letter-spacing: 1.8px;
   font-weight: 600;
-  color: #6d7d68;
+  color: #a25549;
 }
 .sidebar-label {
   padding-left: 15px;
   margin: 0 0 16px;
+  color: #aeb9cb;
 }
 .sidebar nav {
   display: grid;
@@ -132,24 +134,30 @@ button:hover:not(:disabled) {
   align-items: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 10px;
   padding: 14px 15px;
   font-weight: 600;
   font-size: 13px;
-  color: #3e5b42;
+  color: #d5dbe5;
 }
 .nav-link[aria-current="page"] {
-  background: #e1e8da;
-  border-color: #d7e0ce;
+  background: #f8f2e9;
+  border-color: #f8f2e9;
+  color: #27364d;
 }
 .nav-link:hover {
-  background: #e7ece1;
+  background: #364761;
+  color: #fffaf1;
+}
+.nav-link[aria-current="page"]:hover {
+  background: #fffaf2;
+  color: #27364d;
 }
 .nav-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #658157;
+  background: #e65b50;
   margin-left: auto;
 }
 .sidebar-note {
@@ -158,26 +166,26 @@ button:hover:not(:disabled) {
   font-size: 17px;
   font-style: italic;
   line-height: 1.8;
-  color: #889181;
+  color: #b7c0cf;
 }
 .little-line {
   display: block;
   width: 25px;
-  border-top: 1px solid #bfcbb4;
+  border-top: 2px solid #e65b50;
   margin-bottom: 18px;
 }
 .storage-note {
   display: flex;
   gap: 10px;
   padding: 23px;
-  border-top: 1px solid var(--line);
-  color: #73806e;
+  border-top: 1px solid #415069;
+  color: #aab7c8;
   align-items: center;
 }
 .storage-note strong {
   font-size: 12px;
   font-weight: 500;
-  color: #4c5e49;
+  color: #f4efe8;
 }
 .storage-note p {
   font-size: 10px;
@@ -197,10 +205,11 @@ button:hover:not(:disabled) {
   padding: 0 48px;
   color: #8a9189;
   font-size: 11px;
+  background: #fffcf8e8;
 }
 .topbar strong {
-  font-weight: 400;
-  color: #52614f;
+  font-weight: 700;
+  color: #27364d;
 }
 .breadcrumb {
   margin: 0 15px;
@@ -217,7 +226,7 @@ button:hover:not(:disabled) {
   height: 5px;
   width: 5px;
   border-radius: 50%;
-  background: #84966f;
+  background: #e65b50;
 }
 .button {
   display: inline-flex;
@@ -225,7 +234,7 @@ button:hover:not(:disabled) {
   justify-content: center;
   gap: 10px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 9px;
   padding: 12px 17px;
   font-size: 12px;
   font-weight: 500;
@@ -233,7 +242,7 @@ button:hover:not(:disabled) {
   min-height: 42px;
 }
 .primary {
-  background: var(--green);
+  background: var(--primary);
   color: #fff;
 }
 .text-button {
@@ -243,7 +252,7 @@ button:hover:not(:disabled) {
   gap: 7px;
   border: 0;
   background: transparent;
-  color: #687960;
+  color: #53637c;
   padding: 8px 0;
   font-size: 11px;
   min-height: 38px;
@@ -254,14 +263,14 @@ button:hover:not(:disabled) {
   justify-content: center;
   border: 0;
   background: transparent;
-  color: #8b977d;
+  color: #69768a;
   width: 36px;
   height: 36px;
   border-radius: 5px;
 }
 .icon-button:hover {
-  background: #e9efdf;
-  color: #3b583c;
+  background: #ede7de;
+  color: #27364d;
 }
 .danger {
   background: #a15037;
@@ -296,7 +305,7 @@ button:hover:not(:disabled) {
     align-items: stretch;
     justify-content: space-between;
     border-right: 0;
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid #36445b;
   }
   .brand {
     padding: 20px;

@@ -17,15 +17,16 @@
   max-width: 760px;
   margin: 0;
   font:
-    400 clamp(36px, 5vw, 57px) / 1.1 Georgia,
-    serif;
-  letter-spacing: -1.8px;
-  color: #273e31;
+    700 clamp(36px, 5vw, 58px) / 1.06 Arial,
+    Helvetica,
+    sans-serif;
+  letter-spacing: -2.5px;
+  color: #25344a;
 }
 
 .home-intro > p:last-child {
   margin: 18px 0 0;
-  color: #6c7b6f;
+  color: #747b89;
   font-size: 15px;
   line-height: 1.7;
 }
@@ -34,9 +35,10 @@
   position: relative;
   overflow: hidden;
   padding: clamp(28px, 5vw, 54px);
-  background: linear-gradient(130deg, #e8eddf 0%, #f2f1e8 60%, #f5eee2 100%);
-  border: 1px solid #dce3d4;
-  border-radius: 15px;
+  background: linear-gradient(128deg, #25364f 0%, #2d3c53 56%, #455063 100%);
+  border: 1px solid #35435a;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px #2432491a;
 }
 
 .daily-quote::after {
@@ -46,11 +48,11 @@
   height: 310px;
   right: -85px;
   bottom: -205px;
-  border: 1px solid #d3dec9;
+  border: 1px solid #ffffff32;
   border-radius: 50%;
   box-shadow:
-    0 0 0 36px #e4e9d955,
-    0 0 0 75px #e4e9d933;
+    0 0 0 36px #ffffff0c,
+    0 0 0 75px #ffffff08;
   pointer-events: none;
 }
 
@@ -63,7 +65,7 @@
 }
 
 .daily-quote-topline {
-  color: #567057;
+  color: #ffc5b6;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.8px;
@@ -71,7 +73,7 @@
 }
 
 .daily-quote-topline time {
-  color: #778878;
+  color: #c5cfda;
   font-weight: 500;
   letter-spacing: 0.6px;
 }
@@ -83,8 +85,8 @@
   place-items: center;
   margin: 36px 0 10px;
   border-radius: 50%;
-  background: #dce6d4;
-  color: #597658;
+  background: #ffffff18;
+  color: #ffb9a5;
 }
 
 .daily-quote blockquote {
@@ -92,7 +94,7 @@
   z-index: 1;
   max-width: 850px;
   margin: 0 0 38px;
-  color: #304a37;
+  color: #fffaf2;
   font:
     400 clamp(29px, 4vw, 47px) / 1.25 Georgia,
     serif;
@@ -105,19 +107,19 @@
   max-width: 700px;
   margin-bottom: 42px;
   padding: 21px 24px;
-  border-left: 3px solid #8da58a;
+  border-left: 3px solid #ef8b74;
   border-radius: 0 8px 8px 0;
-  background: #ffffff7a;
+  background: #ffffff12;
 }
 
 .daily-reflection-prompt .eyebrow {
   margin: 0 0 9px;
-  color: #617a61;
+  color: #ffc5b6;
 }
 
 .daily-reflection-prompt p:last-child {
   margin: 0;
-  color: #3c5540;
+  color: #f4eee8;
   font:
     400 clamp(18px, 2vw, 21px) / 1.45 Georgia,
     serif;
@@ -127,8 +129,8 @@
   position: relative;
   z-index: 1;
   padding-top: 22px;
-  border-top: 1px solid #d1dacb;
-  color: #71806f;
+  border-top: 1px solid #ffffff30;
+  color: #c5cfda;
   font-size: 11px;
 }
 
@@ -137,9 +139,9 @@
   overflow: hidden;
   margin-top: 18px;
   padding: 30px 38px;
-  border: 1px solid #dbe6e1;
-  border-radius: 15px;
-  background: linear-gradient(120deg, #f3f8f5 0%, #edf4f0 60%, #f7f7f1 100%);
+  border: 1px solid #ead8ca;
+  border-radius: 20px;
+  background: linear-gradient(120deg, #fff3e9 0%, #f8eae0 60%, #f7eee5 100%);
 }
 
 .mindfulness-quote::after {
@@ -149,11 +151,11 @@
   height: 210px;
   right: -66px;
   top: -86px;
-  border: 1px solid #d4e2d9;
+  border: 1px solid #e9c8b7;
   border-radius: 50%;
   box-shadow:
-    0 0 0 28px #d8e8dc66,
-    0 0 0 58px #d8e8dc33;
+    0 0 0 28px #eed7ca66,
+    0 0 0 58px #eed7ca33;
   pointer-events: none;
 }
 
@@ -172,27 +174,27 @@
   place-items: center;
   flex: none;
   border-radius: 50%;
-  background: #dbeae0;
+  background: #f6daca;
 }
 
 .mindfulness-symbol span {
   width: 17px;
   height: 17px;
-  border: 2px solid #5b8068;
+  border: 2px solid #ad6956;
   border-radius: 50%;
   box-shadow:
-    0 0 0 5px #dbeae0,
-    0 0 0 6px #7fa18a;
+    0 0 0 5px #f6daca,
+    0 0 0 6px #d99d84;
 }
 
 .mindfulness-quote-heading .eyebrow {
   margin: 0 0 4px;
-  color: #4c745e;
+  color: #aa594b;
 }
 
 .mindfulness-quote-heading p:last-child {
   margin: 0;
-  color: #74877a;
+  color: #896f68;
   font-size: 12px;
 }
 
@@ -201,7 +203,7 @@
   z-index: 1;
   max-width: 760px;
   margin: 24px 0 20px;
-  color: #365545;
+  color: #483b42;
   font:
     400 clamp(23px, 3vw, 32px) / 1.35 Georgia,
     serif;
@@ -212,7 +214,7 @@
   position: relative;
   z-index: 1;
   margin: 0;
-  color: #7c9180;
+  color: #927b73;
   font-size: 11px;
 }
 
@@ -230,7 +232,7 @@
 
 .home-collections-heading h2 {
   margin: 0;
-  color: #304538;
+  color: #27364d;
   font:
     400 32px / 1.2 Georgia,
     serif;
@@ -238,24 +240,26 @@
 
 .home-collections-heading > p {
   margin: 0 0 2px;
-  color: #718071;
+  color: #737b87;
   font-size: 12px;
 }
 
 .home-collection-grid {
+  counter-reset: collection;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 17px;
 }
 
 .home-collection-card {
+  position: relative;
   min-height: 245px;
   display: flex;
   flex-direction: column;
   padding: 28px;
-  border: 1px solid #e0e5dc;
-  border-radius: 11px;
-  background: #fff;
+  border: 1px solid #e5dfd6;
+  border-radius: 16px;
+  background: #fffdf9;
   transition:
     border-color 0.15s,
     transform 0.15s,
@@ -264,8 +268,20 @@
 
 .home-collection-card:hover {
   transform: translateY(-3px);
-  border-color: #bdcdb8;
-  box-shadow: 0 12px 28px #3e59420e;
+  border-color: #d5b4a8;
+  box-shadow: 0 12px 28px #27364d14;
+}
+
+.home-collection-card::before {
+  counter-increment: collection;
+  content: "0" counter(collection);
+  position: absolute;
+  top: 29px;
+  right: 29px;
+  color: #c27664;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 .home-collection-icon {
@@ -273,14 +289,14 @@
   height: 43px;
   display: grid;
   place-items: center;
-  background: #eef2e9;
+  background: #f8e8df;
   border-radius: 9px;
-  color: #5b765a;
+  color: #a95147;
 }
 
 .home-collection-card h3 {
   margin: 24px 0 8px;
-  color: #334c3a;
+  color: #27364d;
   font:
     400 23px Georgia,
     serif;
@@ -288,7 +304,7 @@
 
 .home-collection-card p {
   margin: 0 0 23px;
-  color: #708071;
+  color: #737b87;
   font-size: 12px;
   line-height: 1.65;
 }
@@ -298,7 +314,7 @@
   align-items: center;
   gap: 7px;
   margin-top: auto;
-  color: #517253;
+  color: #ad594e;
   font-size: 11px;
   font-weight: 700;
 }

@@ -1,0 +1,138 @@
+/* A shared editorial palette for the independent feature workspaces. */
+.workspace .eyebrow {
+  color: #b65d50;
+}
+
+.workspace
+  :is(
+    .reflections-page h1,
+    .reading-heading h1,
+    .gratitude-page h1,
+    .plans-heading h1
+  ) {
+  color: #27364d;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.055em;
+}
+
+.workspace
+  :is(
+    .reflections-page h1 span,
+    .reading-heading h1 span,
+    .gratitude-page h1 span,
+    .plans-heading h1 span,
+    .subscriptions-heading h2 span
+  ) {
+  color: #c36c59;
+}
+
+.workspace :is(.plans-page, .subscriptions-page) {
+  color: #27364d;
+}
+
+.workspace
+  :is(
+    .page-description,
+    .reading-heading > p:last-child,
+    .plans-heading > p:last-child,
+    .subscriptions-intro
+  ) {
+  color: #717b89;
+}
+
+.workspace
+  :is(
+    .composer,
+    .gratitude-composer,
+    .reading-capture,
+    .plans-capture,
+    .subscriptions-capture
+  ) {
+  background: #fffdf9;
+  border-color: #e5dfd6;
+  border-top: 3px solid #c86c58;
+  border-radius: 15px;
+  box-shadow: 0 12px 32px #27364d0b;
+}
+
+.workspace
+  :is(
+    .entry-card,
+    .gratitude-card,
+    .reading-book,
+    .plan-card,
+    .subscription-card,
+    .reading-note,
+    .data-panel
+  ) {
+  background: #fffdfa;
+  border-color: #e5dfd6;
+  border-radius: 14px;
+}
+
+.workspace .entry-card.quote {
+  background: #f9eee7;
+  border-color: #ead8cc;
+}
+
+.workspace :is(.reading-book-finished, .plan-card.is-done) {
+  background: #f7f6f0;
+}
+
+.workspace
+  :is(
+    .reading-book-title,
+    .reading-map-node > a,
+    .reading-book h3,
+    .gratitude-card-title,
+    .plan-card h3,
+    .subscription-card h4,
+    .entry-card blockquote > p
+  ) {
+  color: #28374e;
+}
+
+.workspace :is(.reading-book-summary, .data-callout) {
+  background: #f7eee6;
+  border-color: #ead8cc;
+}
+
+.workspace
+  :is(
+    .kind-tabs .selected,
+    .filter-tabs button.active,
+    .reading-filters button[aria-pressed="true"],
+    .plans-filters button[aria-pressed="true"],
+    .subscriptions-filters button[aria-pressed="true"]
+  ) {
+  background: #2b3c56;
+  border-color: #2b3c56;
+  color: #fffaf2;
+}
+
+.workspace .reading-map-frame {
+  background-color: #f8f4ed;
+  background-image: radial-gradient(#e3d7cb 0.8px, transparent 0.8px);
+}
+
+.workspace .reading-map-edge:not(.done) {
+  stroke: #93a1b1;
+}
+
+.workspace .reading-map-node {
+  border-color: #dcdedb;
+  box-shadow: 0 5px 15px #27364d12;
+}
+
+@media (max-width: 760px) {
+  .workspace
+    :is(
+      .reflections-page h1,
+      .reading-heading h1,
+      .gratitude-page h1,
+      .plans-heading h1
+    ) {
+    letter-spacing: -0.045em;
+  }
+}

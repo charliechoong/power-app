@@ -3,6 +3,7 @@ import { StorageProvider } from "@/lib/storage-mode";
 import { storageMode } from "@/lib/server/config";
 import "./globals.css";
 import "./motion.css";
+import "./identity.css";
 
 export const metadata: Metadata = {
   title: { default: "Commonplace", template: "%s · Commonplace" },
