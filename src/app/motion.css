@@ -1,0 +1,240 @@
+/* Shared motion stays visual: controls, layout, and the reading map keep their behavior. */
+@keyframes page-arrive {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes card-arrive {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes quiet-breathe {
+  50% {
+    scale: 1.07;
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-intro,
+  .page-heading,
+  .reading-heading,
+  .plans-heading,
+  .gratitude-page .page-heading,
+  .subscriptions-heading,
+  .reading-detail-heading,
+  .data-page > h1 {
+    animation: page-arrive 480ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  }
+
+  .daily-quote,
+  .mindfulness-quote,
+  .home-collections,
+  .composer,
+  .gratitude-composer,
+  .reading-capture,
+  .plans-capture,
+  .subscriptions-capture,
+  .reading-map-section,
+  .reading-book-summary,
+  .reading-detail-editor,
+  .data-panel {
+    animation: page-arrive 540ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+    animation-delay: 80ms;
+  }
+
+  .mindfulness-quote,
+  .home-collections,
+  .reading-map-section {
+    animation-delay: 150ms;
+  }
+
+  :is(
+    .home-collection-card,
+    .entry-card,
+    .gratitude-card,
+    .reading-book,
+    .plan-card,
+    .subscription-card,
+    .reading-note
+  ) {
+    animation: card-arrive 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  }
+
+  :is(
+      .home-collection-grid,
+      .entry-grid,
+      .gratitude-list,
+      .reading-books,
+      .plans-grid,
+      .subscriptions-grid,
+      .reading-note-list
+    )
+    > :nth-child(4n + 2) {
+    animation-delay: 45ms;
+  }
+
+  :is(
+      .home-collection-grid,
+      .entry-grid,
+      .gratitude-list,
+      .reading-books,
+      .plans-grid,
+      .subscriptions-grid,
+      .reading-note-list
+    )
+    > :nth-child(4n + 3) {
+    animation-delay: 90ms;
+  }
+
+  :is(
+      .home-collection-grid,
+      .entry-grid,
+      .gratitude-list,
+      .reading-books,
+      .plans-grid,
+      .subscriptions-grid,
+      .reading-note-list
+    )
+    > :nth-child(4n + 4) {
+    animation-delay: 135ms;
+  }
+
+  .brand-mark,
+  .mindfulness-symbol {
+    animation: quiet-breathe 5s ease-in-out infinite;
+  }
+
+  :is(.reading-progress, .plan-progress) progress::-webkit-progress-value {
+    transition: width 450ms ease;
+  }
+
+  :is(.reading-progress, .plan-progress) progress::-moz-progress-bar {
+    transition: width 450ms ease;
+  }
+}
+
+.nav-link,
+.nav-link svg,
+.button,
+.icon-button,
+.text-button,
+.kind-tabs button,
+.filter-tabs button,
+.reading-filters button,
+.plans-filters button,
+.subscriptions-filters button,
+.reading-map-edge,
+.reading-map-node,
+.reading-map-remove-connection {
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease,
+    opacity 220ms ease,
+    scale 220ms ease,
+    stroke 220ms ease;
+}
+
+:is(
+  .home-collection-card,
+  .entry-card,
+  .gratitude-card,
+  .reading-book,
+  .plan-card,
+  .subscription-card,
+  .reading-note,
+  .data-panel
+) {
+  transition:
+    border-color 240ms ease,
+    box-shadow 240ms ease,
+    translate 240ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+:is(.home-collection-card, .reading-book) .home-collection-icon,
+.reading-book-mark,
+.home-collection-action svg,
+.reading-notes-link > svg:last-child {
+  transition:
+    translate 240ms ease,
+    rotate 240ms ease,
+    scale 240ms ease;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .nav-link:hover svg {
+    translate: 2px 0;
+  }
+
+  :is(.button, .icon-button):hover:not(:disabled) {
+    scale: 1.035;
+    box-shadow: 0 5px 14px #304f401c;
+  }
+
+  :is(.button, .icon-button):active:not(:disabled) {
+    scale: 0.97;
+  }
+
+  :is(
+    .entry-card,
+    .gratitude-card,
+    .reading-book,
+    .plan-card,
+    .subscription-card,
+    .reading-note,
+    .data-panel
+  ):hover {
+    translate: 0 -3px;
+    border-color: #c7d5c0;
+    box-shadow: 0 12px 26px #304f4014;
+  }
+
+  .home-collection-card:hover {
+    translate: 0 -2px;
+  }
+
+  .home-collection-card:hover .home-collection-icon {
+    rotate: -5deg;
+    scale: 1.08;
+  }
+
+  .home-collection-card:hover .home-collection-action svg,
+  .reading-notes-link:hover > svg:last-child {
+    translate: 4px 0;
+  }
+
+  .reading-book:hover .reading-book-mark {
+    rotate: -4deg;
+  }
+
+  .reading-map-node:not(.is-dragging):hover {
+    border-color: #a9bf9c;
+    box-shadow: 0 8px 22px #435d3226;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
