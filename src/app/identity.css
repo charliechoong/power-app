@@ -101,14 +101,22 @@
 .workspace
   :is(
     .kind-tabs .selected,
-    .filter-tabs button.active,
-    .reading-filters button[aria-pressed="true"],
     .plans-filters button[aria-pressed="true"],
     .subscriptions-filters button[aria-pressed="true"]
   ) {
   background: #2b3c56;
   border-color: #2b3c56;
   color: #fffaf2;
+}
+
+.workspace .filter-tabs button.active {
+  background: transparent;
+  border-color: #bd6957;
+  color: #27364d;
+}
+
+.workspace .filter-tabs button.active span {
+  color: #a55449;
 }
 
 .workspace .reading-map-frame {
